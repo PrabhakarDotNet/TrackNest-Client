@@ -1,0 +1,31 @@
+<h2 class="dashboard-title">Expense Dashboard</h2>
+
+<div class="dashboard-actions">
+  <button class="icon-btn add">➕ Add Expense</button>
+</div>
+
+<table class="expense-table">
+  <thead>
+    <tr>
+      <th>Amount</th>
+      <th>Category</th>
+      <th>Description</th>
+      <th>Date</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <!-- Your API data stays here -->
+    <tr *ngFor="let e of expenses">
+      <td>{{ e.amount | currency:'INR' }}</td>
+      <td>{{ e.category }}</td>
+      <td>{{ e.description }}</td>
+      <td>{{ e.expenseDate | date:'shortDate' }}</td>
+      <td class="action-buttons">
+        <button class="icon-btn edit">✏️</button>
+        <button class="icon-btn delete">🗑️</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
