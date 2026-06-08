@@ -1,47 +1,117 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ExpenseFormComponent } from '../expense-form/expense-form.component';
 import { ExpenseService } from '../../services/expense.service';
 import { Expense } from '../../models/expense.model';
 
 @Component({
   selector: 'app-expense-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ExpenseFormComponent],
   templateUrl: './expense-list.component.html',
   styleUrls: ['./expense-list.component.scss']
 })
 export class ExpenseListComponent implements OnInit {
-
   expenses: Expense[] = [];
+  loading = true;
+  selectedExpense: Expense | null = null;
 
-  constructor(private expenseService: ExpenseService) {}
+  constructor(private expenseService: ExpenseService,
+              private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadExpenses();
   }
 
   loadExpenses() {
-  this.expenseService.getAll().subscribe({
-    next: (data) => {
-      console.log('API DATA:', data); 
+    this.loading = true;
+    this.expenseService.getAll().subscribe({
+      next: (data: Expense[]) => {
+        this.expenses = data;
+        this.loading = false;
+        this.cdr.detectChanges(); // force Angular to update view
+      },
+      error: (err) => {
+        console.log(err);
+        this.loading = false;
+      }
+    });
+  }
 
-      this.expenses = data.map((x: any) => ({
-        id: x.id,
-        amount: x.amount ?? x.Amount,
-        category: x.category ?? x.Category,
-        description: x.description ?? x.Description,
-        expenseDate: x.expenseDate ?? x.Date
-      }));
+  selectedDeleteId: number | null = null;
+  selectedDeleteDescription = '';
 
-    },
-    error: (err) => console.log(err)
-  });
-}
+  confirmDeleteExpense(id: number, description: string) {
+    this.selectedDeleteId = id;
+    this.selectedDeleteDescription = description || '';
 
-  deleteExpense(id: number) {
-    this.expenseService.delete(id).subscribe({
-      next: () => this.loadExpenses(),
+    const modalEl = document.getElementById('confirmDeleteModal');
+    if (!modalEl) return;
+
+    const BsModal = (window as any).bootstrap?.Modal;
+    if (!BsModal) return;
+
+    const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
+    instance.show();
+  }
+
+  confirmDelete() {
+    if (this.selectedDeleteId === null) return;
+
+    this.expenseService.delete(this.selectedDeleteId).subscribe({
+      next: () => {
+        this.loadExpenses();
+        this.selectedDeleteId = null;
+        this.selectedDeleteDescription = '';
+        const modalEl = document.getElementById('confirmDeleteModal');
+        if (modalEl) {
+          const BsModal = (window as any).bootstrap?.Modal;
+          if (BsModal) {
+            const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
+            instance.hide();
+          }
+        }
+      },
       error: (err) => console.log(err)
     });
+  }
+
+  openAddExpenseForm()
+  {
+    this.selectedExpense = null;
+    const modalEl = document.getElementById('addExpenseModal');
+    if (!modalEl) return;
+
+    const BsModal = (window as any).bootstrap?.Modal;
+    if (!BsModal) return;
+
+    const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
+    instance.show();
+  }
+
+  openEditExpenseForm(exp: Expense) {
+    this.selectedExpense = { ...exp };
+
+    const modalEl = document.getElementById('addExpenseModal');
+    if (!modalEl) return;
+
+    const BsModal = (window as any).bootstrap?.Modal;
+    if (!BsModal) return;
+
+    const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
+    instance.show();
+  }
+
+  onExpenseSaved() {
+    const modalEl = document.getElementById('addExpenseModal');
+    if (modalEl) {
+      const BsModal = (window as any).bootstrap?.Modal;
+      if (BsModal) {
+        const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
+        instance.hide();
+      }
+    }
+
+    this.loadExpenses();
   }
 }

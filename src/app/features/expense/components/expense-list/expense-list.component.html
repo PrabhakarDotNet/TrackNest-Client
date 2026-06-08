@@ -1,31 +1,77 @@
-<h2 class="dashboard-title">Expense Dashboard</h2>
+<div class="expense-page">
+  <div class="expense-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4 gap-3">
+    <div>
+      <p class="text-muted mb-1">TrackNest Expense Dashboard</p>
+      <h2 class="section-title">Expense Summary</h2>
+      <p class="section-subtitle">Manage your spending with a clean, modern interface.</p>
+    </div>
+    <button class="btn btn-primary btn-lg add-btn" (click)="openAddExpenseForm()">+ Add Expense</button>
+  </div>
 
-<div class="dashboard-actions">
-  <button class="icon-btn add">➕ Add Expense</button>
+  <div class="expense-table-card shadow-sm">
+    <div class="table-top-bar d-flex justify-content-between align-items-center mb-3">
+      <span class="badge bg-info text-dark">{{ expenses.length }} expenses</span>
+      <span class="text-muted">Latest expense data shown below</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-borderless align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Amount</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Expense Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of expenses" class="expense-row">
+            <td class="text-primary">{{ e.amount | currency:'INR' }}</td>
+            <td>{{ e.category }}</td>
+            <td class="text-muted description-cell">{{ e.description }}</td>
+            <td>{{ e.expenseDate ? (e.expenseDate | date:'dd/MM/yyyy') : '—' }}</td>
+            <td class="action-buttons text-nowrap">
+              <button class="btn btn-sm btn-outline-warning me-2" (click)="openEditExpenseForm(e)">Edit</button>
+              <button class="btn btn-sm btn-outline-danger" (click)="confirmDeleteExpense(e.id, e.description)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
-<table class="expense-table">
-  <thead>
-    <tr>
-      <th>Amount</th>
-      <th>Category</th>
-      <th>Description</th>
-      <th>Date</th>
-      <th>Action</th>
-    </tr>
-  </thead>
+<!-- Add/Edit Expense Modal -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseLabel" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content expense-modal-content compact-modal">
+      <div class="modal-header border-0">
+        <div>
+          <h5 class="modal-title" id="addExpenseLabel">{{ selectedExpense?.id ? 'Edit Expense' : 'Add Expense' }}</h5>
+          <p class="modal-subtitle mb-0">{{ selectedExpense?.id ? 'Update expense details' : 'Create a new expense entry' }}</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <app-expense-form [expenseInput]="selectedExpense" (saved)="onExpenseSaved()"></app-expense-form>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <tbody>
-    <!-- Your API data stays here -->
-    <tr *ngFor="let e of expenses">
-      <td>{{ e.amount | currency:'INR' }}</td>
-      <td>{{ e.category }}</td>
-      <td>{{ e.description }}</td>
-      <td>{{ e.expenseDate | date:'shortDate' }}</td>
-      <td class="action-buttons">
-        <button class="icon-btn edit">✏️</button>
-        <button class="icon-btn delete">🗑️</button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content confirm-modal-content text-center py-4 px-3">
+      <div class="confirm-icon mb-3">!</div>
+      <h5 class="mb-2" id="confirmDeleteLabel">Confirm delete</h5>
+      <p class="text-muted mb-2">This action cannot be undone.</p>
+      <p class="fw-semibold mb-4">Remove «{{ selectedDeleteDescription || 'selected expense' }}»?</p>
+      <div class="d-flex justify-content-center gap-2">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>

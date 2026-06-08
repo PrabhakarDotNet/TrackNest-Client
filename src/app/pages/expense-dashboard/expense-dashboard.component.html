@@ -1,1 +1,59 @@
-<p>expense-dashboard works!</p>
+<div class="dashboard-page">
+  <div class="dashboard-topbar">
+    <div>
+      <p class="dashboard-label">TrackNest</p>
+      <h1>Expense dashboard</h1>
+      <p class="dashboard-text">A modern overview of your spending, with quick actions and monthly insights.</p>
+    </div>
+    <div class="dashboard-actions">
+      <a routerLink="/login" class="btn btn-light btn-sm">Login</a>
+      <a routerLink="/signup" class="btn btn-outline-primary btn-sm">Sign Up</a>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="dashboard-summary">
+      <div class="summary-card highlight-card">
+        <span class="summary-label">Total spent</span>
+        <strong>{{ totalExpense | currency:'INR' }}</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">Expenses</span>
+        <strong>{{ expenseCount }}</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">Average expense</span>
+        <strong>{{ averageExpense | currency:'INR' }}</strong>
+      </div>
+    </div>
+
+    <div class="dashboard-chart-card">
+      <div class="chart-header">
+        <div>
+          <span class="chart-label">Monthly spend</span>
+          <h2>Last 6 months</h2>
+        </div>
+      </div>
+      <div class="chart-bars">
+        <div *ngFor="let point of chartData" class="chart-bar-item">
+          <span class="bar-value">{{ point.amount | currency:'INR' }}</span>
+          <div class="bar-wrapper">
+            <div class="bar-fill" [style.height.%]="point.height"></div>
+          </div>
+          <span class="bar-month">{{ point.month }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-panel">
+    <div class="panel-header">
+      <div>
+        <span class="panel-label">Expense list</span>
+        <h2>Recent transactions</h2>
+      </div>
+      <div class="panel-note">Use the add button to log new expenses.</div>
+    </div>
+    <app-expense-list></app-expense-list>
+  </div>
+</div>

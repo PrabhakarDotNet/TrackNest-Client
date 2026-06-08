@@ -19,4 +19,10 @@ export class ExpenseService {
   delete(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
+   create(expense: Expense): Observable<{ id: number }> {
+    return this.http.post<{ id: number }>(this.apiUrl, expense);
+  }
+  update(id: number, expense: Expense): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, expense);
+  }
 }
