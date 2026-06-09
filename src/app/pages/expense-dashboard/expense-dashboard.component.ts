@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ExpenseListComponent } from '../../features/expense/components/expense-list/expense-list.component';
 import { ExpenseService } from '../../features/expense/services/expense.service';
 import { AuthService } from '../../features/auth/services/auth.service';
@@ -15,7 +15,7 @@ interface ChartPoint {
 @Component({
   selector: 'app-expense-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, ExpenseListComponent],
+  imports: [CommonModule, ExpenseListComponent],
   templateUrl: './expense-dashboard.component.html',
   styleUrls: ['./expense-dashboard.component.scss']
 })
@@ -29,27 +29,27 @@ export class ExpenseDashboardComponent implements OnInit {
 
   constructor(
     private expenseService: ExpenseService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
+
+  get currentUsername(): string {
+    return this.authService.getCurrentUser()?.username || 'User';
+  }
 
   ngOnInit(): void {
     this.loadDashboardData();
   }
 
+  signOut(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
   loadDashboardData() {
     this.loading = true;
-    const userId = this.authService.getCurrentUserId();
-    if (userId === null) {
-      this.expenses = [];
-      this.expenseCount = 0;
-      this.totalExpense = 0;
-      this.averageExpense = 0;
-      this.chartData = this.buildChart([]);
-      this.loading = false;
-      return;
-    }
 
-    this.expenseService.getByUserId(userId).subscribe({
+    this.expenseService.getMyExpenses().subscribe({
       next: (data: Expense[]) => {
         this.expenses = data;
         this.expenseCount = data.length;

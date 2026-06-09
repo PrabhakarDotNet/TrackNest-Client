@@ -10,9 +10,9 @@ interface UserProfile {
 }
 
 interface AuthResponse {
-  accessToken: string;
-  refreshToken?: string;
-  user?: UserProfile;
+  AccessToken: string;
+  RefreshToken?: string;
+  User?: UserProfile;
 }
 
 @Injectable({
@@ -29,18 +29,20 @@ export class AuthService {
 
   login(username: string, password: string): Observable<boolean> {
     return this.http
-      .post<AuthResponse>(`${this.authUrl}/login`, { username, password })
+      .post<AuthResponse>(`${this.authUrl}/login`, { username, password }, { withCredentials: true })
       .pipe(
         tap((response) => {
-          if (response?.accessToken) {
-            console.log(response);
-            this.setAccessToken(response.accessToken);
-            if (response.user) {
-              this.setCurrentUser(response.user);
+          const accessToken = response?.AccessToken ?? (response as any)?.accessToken;
+          const user = response?.User ?? (response as any)?.user;
+
+          if (accessToken) {
+            this.setAccessToken(accessToken);
+            if (user) {
+              this.setCurrentUser(user);
             }
           }
         }),
-        map((response) => !!response?.accessToken),
+        map((response) => !!(response?.AccessToken ?? (response as any)?.accessToken)),
         catchError(() => of(false))
       );
   }
@@ -48,13 +50,16 @@ export class AuthService {
   signup(username: string, email: string, password: string): Observable<boolean> {
     const payload = { username, email, password };
     return this.http
-      .post<AuthResponse>(`${this.authUrl}/signup`, payload)
+      .post<AuthResponse>(`${this.authUrl}/signup`, payload, { withCredentials: true })
       .pipe(
         tap((response) => {
-          if (response?.accessToken) {
-            this.setAccessToken(response.accessToken);
-            if (response.user) {
-              this.setCurrentUser(response.user);
+          const accessToken = response?.AccessToken ?? (response as any)?.accessToken;
+          const user = response?.User ?? (response as any)?.user;
+
+          if (accessToken) {
+            this.setAccessToken(accessToken);
+            if (user) {
+              this.setCurrentUser(user);
             }
           }
         }),
@@ -102,11 +107,12 @@ export class AuthService {
     // refreshToken is httpOnly cookie - browser sends it automatically
     // No need to pass it in the body
     return this.http
-      .post<AuthResponse>(`${this.authUrl}/refresh`, {})
+      .post<AuthResponse>(`${this.authUrl}/refresh`, {}, { withCredentials: true })
       .pipe(
         tap((response) => {
-          if (response?.accessToken) {
-            this.setAccessToken(response.accessToken);
+          const accessToken = response?.AccessToken ?? (response as any)?.accessToken;
+          if (accessToken) {
+            this.setAccessToken(accessToken);
           }
         }),
         catchError((error) => {
@@ -122,6 +128,21 @@ export class AuthService {
   }
 
   // ===== USER MANAGEMENT =====
+
+  getProfile(): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiUrl}/me`, { withCredentials: true });
+  }
+
+  loadProfile(): Observable<boolean> {
+    return this.getProfile().pipe(
+      tap((user) => this.setCurrentUser(user)),
+      map(() => true),
+      catchError((error) => {
+        console.error('Failed to load profile', error);
+        return of(false);
+      })
+    );
+  }
 
   setCurrentUser(user: UserProfile): void {
     localStorage.setItem(this.currentUserKey, JSON.stringify(user));

@@ -6,8 +6,8 @@
       <p class="dashboard-text">A modern overview of your spending, with quick actions and monthly insights.</p>
     </div>
     <div class="dashboard-actions">
-      <a routerLink="/login" class="btn btn-light btn-sm">Login</a>
-      <a routerLink="/signup" class="btn btn-outline-primary btn-sm">Sign Up</a>
+      <span class="dashboard-user me-3">Signed in as {{ currentUsername }}</span>
+      <button class="btn btn-outline-danger btn-sm" (click)="signOut()">Sign Out</button>
     </div>
   </div>
 

@@ -18,15 +18,18 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private authService: AuthService) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Add access token to request if available
+    // Add access token to request if available and enable sending cookies.
     const accessToken = this.authService.getAccessToken();
     if (accessToken) {
       request = this.addTokenToRequest(request, accessToken);
+    } else {
+      request = request.clone({ withCredentials: true });
     }
 
-    // Enable sending cookies (for httpOnly refresh token)
-    request = request.clone({
-      withCredentials: true
+    console.log('AuthInterceptor request', {
+      url: request.url,
+      auth: request.headers.get('Authorization'),
+      withCredentials: request.withCredentials
     });
 
     return next.handle(request).pipe(
@@ -44,7 +47,8 @@ export class AuthInterceptor implements HttpInterceptor {
     return request.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
-      }
+      },
+      withCredentials: true
     });
   }
 
@@ -56,7 +60,8 @@ export class AuthInterceptor implements HttpInterceptor {
       return this.authService.refreshToken().pipe(
         switchMap((response: any) => {
           this.isRefreshing = false;
-          const newAccessToken = response.accessToken;
+          const newAccessToken = response?.accessToken ?? response?.AccessToken;
+          console.log('AuthInterceptor refreshed token', newAccessToken);
           this.refreshTokenSubject.next(newAccessToken);
 
           // Retry the original request with new token

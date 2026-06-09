@@ -2,6 +2,7 @@ import { Component, Output, EventEmitter, Input, OnChanges, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ExpenseService } from '../../services/expense.service';
+import { AuthService } from '../../../auth/services/auth.service';
 import { Expense } from '../../models/expense.model';
 
 @Component({
@@ -22,7 +23,10 @@ export class ExpenseFormComponent {
     expenseDate: ''   // keep as string
   };
 
-  constructor(private expenseService: ExpenseService) {}
+  constructor(
+    private expenseService: ExpenseService,
+    private authService: AuthService
+  ) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['expenseInput']) {
@@ -48,6 +52,14 @@ export class ExpenseFormComponent {
     if (this.expense.expenseDate) {
       this.expense.expenseDate = new Date(this.expense.expenseDate).toISOString();
     }
+
+    const userId = this.authService.getCurrentUserId();
+    if (userId === null) {
+      console.error('Cannot save expense: no authenticated user.');
+      return;
+    }
+
+    this.expense.userId = userId;
 
     if (this.expense && this.expense.id && this.expense.id > 0) {
       this.expenseService.update(this.expense.id, this.expense).subscribe({

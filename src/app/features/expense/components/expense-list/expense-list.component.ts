@@ -29,14 +29,8 @@ export class ExpenseListComponent implements OnInit {
 
   loadExpenses() {
     this.loading = true;
-    const userId = this.authService.getCurrentUserId();
-    if (userId === null) {
-      this.expenses = [];
-      this.loading = false;
-      return;
-    }
 
-    this.expenseService.getByUserId(userId).subscribe({
+    this.expenseService.getMyExpenses().subscribe({
       next: (data: Expense[]) => {
         this.expenses = data;
         this.loading = false;
