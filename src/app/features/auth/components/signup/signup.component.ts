@@ -12,7 +12,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./signup.component.scss']
 })
 export class SignupComponent {
-  name = '';
+  username = '';
   email = '';
   password = '';
   confirmPassword = '';
@@ -23,7 +23,7 @@ export class SignupComponent {
 
   signup() {
     this.message = '';
-    if (!this.name || !this.email || !this.password || !this.confirmPassword) {
+    if (!this.username || !this.email || !this.password || !this.confirmPassword) {
       this.message = 'Please fill in all fields.';
       return;
     }
@@ -34,7 +34,7 @@ export class SignupComponent {
     }
 
     this.loading = true;
-    this.authService.signup(this.name, this.email, this.password).subscribe({
+    this.authService.signup(this.username, this.email, this.password).subscribe({
       next: (success) => {
         this.loading = false;
         if (success) {

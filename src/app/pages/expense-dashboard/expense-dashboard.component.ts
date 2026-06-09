@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ExpenseListComponent } from '../../features/expense/components/expense-list/expense-list.component';
 import { ExpenseService } from '../../features/expense/services/expense.service';
+import { AuthService } from '../../features/auth/services/auth.service';
 import { Expense } from '../../features/expense/models/expense.model';
 
 interface ChartPoint {
@@ -26,7 +27,10 @@ export class ExpenseDashboardComponent implements OnInit {
   expenseCount = 0;
   loading = true;
 
-  constructor(private expenseService: ExpenseService) {}
+  constructor(
+    private expenseService: ExpenseService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.loadDashboardData();
@@ -34,7 +38,18 @@ export class ExpenseDashboardComponent implements OnInit {
 
   loadDashboardData() {
     this.loading = true;
-    this.expenseService.getAll().subscribe({
+    const userId = this.authService.getCurrentUserId();
+    if (userId === null) {
+      this.expenses = [];
+      this.expenseCount = 0;
+      this.totalExpense = 0;
+      this.averageExpense = 0;
+      this.chartData = this.buildChart([]);
+      this.loading = false;
+      return;
+    }
+
+    this.expenseService.getByUserId(userId).subscribe({
       next: (data: Expense[]) => {
         this.expenses = data;
         this.expenseCount = data.length;

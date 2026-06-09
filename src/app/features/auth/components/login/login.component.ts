@@ -12,7 +12,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
-  email = '';
+  username = '';
   password = '';
   message = '';
   loading = false;
@@ -21,13 +21,13 @@ export class LoginComponent {
 
   login() {
     this.message = '';
-    if (!this.email || !this.password) {
-      this.message = 'Please enter both email and password.';
+    if (!this.username || !this.password) {
+      this.message = 'Please enter both username and password.';
       return;
     }
 
     this.loading = true;
-    this.authService.login(this.email, this.password).subscribe({
+    this.authService.login(this.username, this.password).subscribe({
       next: (success) => {
         this.loading = false;
         if (success) {

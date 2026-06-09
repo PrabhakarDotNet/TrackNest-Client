@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ExpenseFormComponent } from '../expense-form/expense-form.component';
 import { ExpenseService } from '../../services/expense.service';
+import { AuthService } from '../../../auth/services/auth.service';
 import { Expense } from '../../models/expense.model';
 
 @Component({
@@ -16,8 +17,11 @@ export class ExpenseListComponent implements OnInit {
   loading = true;
   selectedExpense: Expense | null = null;
 
-  constructor(private expenseService: ExpenseService,
-              private cdr: ChangeDetectorRef) {}
+  constructor(
+    private expenseService: ExpenseService,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadExpenses();
@@ -25,7 +29,14 @@ export class ExpenseListComponent implements OnInit {
 
   loadExpenses() {
     this.loading = true;
-    this.expenseService.getAll().subscribe({
+    const userId = this.authService.getCurrentUserId();
+    if (userId === null) {
+      this.expenses = [];
+      this.loading = false;
+      return;
+    }
+
+    this.expenseService.getByUserId(userId).subscribe({
       next: (data: Expense[]) => {
         this.expenses = data;
         this.loading = false;

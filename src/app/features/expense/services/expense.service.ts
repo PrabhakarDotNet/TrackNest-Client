@@ -16,12 +16,18 @@ export class ExpenseService {
     return this.http.get<Expense[]>(this.apiUrl);
   }
 
+  getByUserId(userId: number): Observable<Expense[]> {
+    return this.http.get<Expense[]>(`${this.apiUrl}/${userId}`);
+  }
+
   delete(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
-   create(expense: Expense): Observable<{ id: number }> {
+
+  create(expense: Expense): Observable<{ id: number }> {
     return this.http.post<{ id: number }>(this.apiUrl, expense);
   }
+
   update(id: number, expense: Expense): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}`, expense);
   }
