@@ -1,0 +1,28 @@
+<div class="expense-form-card p-3">
+  <form (ngSubmit)="saveExpense()" class="row g-2">
+    <div class="col-md-6">
+      <label class="form-label">Amount</label>
+      <input type="number" class="form-control" [(ngModel)]="expense.amount" name="amount" required />
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Category</label>
+      <input type="text" class="form-control" [(ngModel)]="expense.category" name="category" required />
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Description</label>
+      <textarea class="form-control" rows="3" [(ngModel)]="expense.description" name="description"></textarea>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Expense Date</label>
+      <input type="date" class="form-control" [(ngModel)]="expense.expenseDate" name="expenseDate" />
+    </div>
+
+    <div class="col-12 d-flex flex-column flex-sm-row justify-content-end gap-2 mt-1">
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary btn-sm">{{ expense.id && expense.id > 0 ? 'Update' : 'Save' }}</button>
+    </div>
+  </form>
+</div>

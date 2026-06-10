@@ -1,236 +1,79 @@
-# TrackNest
+# TrackNest.Client (Angular)
 
-A secure and scalable Expense Tracking REST API built using ASP.NET Core 8, Entity Framework Core, SQL Server, and Clean Architecture principles.
+## Overview
 
-TrackNest enables users to securely manage personal expenses through authentication, authorization, and user-specific expense management.
+This repository contains the Angular client for TrackNest. The Angular side is implemented as a standalone application using Angular 21, with an auth-enabled expense dashboard and expense management workflow.
 
----
+> This README documents only the Angular/client-side implementation. The backend/api is not included here.
 
-## Features
+## What was built
 
-### Authentication & Security
+- Standalone root application with `App` component and router outlet.
+- Authentication flow with login, signup, and protected routes.
+- HTTP interceptor for attaching bearer tokens and supporting refresh tokens.
+- Expense dashboard showing user-specific expense statistics and charts.
+- Expense list page with create, edit, and delete operations.
+- Navbar that updates based on authentication state.
 
-* User Registration
-* User Login
-* JWT Authentication
-* HttpOnly Cookie-Based Authentication
-* Refresh Token Implementation
-* Secure Protected APIs
-* User-Specific Data Access
-* Automatic Access Token Renewal
+## Angular features used
 
-### Expense Management
+- Angular 21 standalone components
+- `RouterOutlet` and route guards for protected pages
+- `provideRouter`, `provideHttpClient`, and global providers in `app.config.ts`
+- `HttpInterceptor` for auth token handling
+- `signal` in `src/app/app.ts` for reactive app title state
+- `localStorage` token storage for access tokens
+- `withCredentials: true` for secure auth requests
 
-* Create Expense
-* View Expenses
-* Update Expenses
-* Delete Expenses
-* Expense Categorization
-* Expense Description Tracking
-* Expense Date Management
+## Key pages and routes
 
-### Architecture
+- `/login` - login page
+- `/signup` - signup page
+- `/dashboard` - expense dashboard (protected)
+- `/expenses` - expense list page (protected)
+- `/` redirects to dashboard when authenticated
+- `**` redirects to `login`
 
-* Clean Architecture
-* Dependency Injection
-* Repository Pattern
-* Service Layer
-* RESTful API Design
-* Entity Framework Core
+## Auth flow
 
----
+- `AuthService` handles login, signup, token storage, refresh token flow, and user profile management.
+- `AuthInterceptor` adds the stored bearer token to outgoing requests.
+- `AuthGuardService` protects dashboard and expense pages.
+- Navbar shows login/signup links when unauthenticated and logout plus username when authenticated.
 
-## Technology Stack
+## Expense management
 
-### Backend
+- `ExpenseService` performs CRUD operations against the API.
+- `ExpenseListComponent` loads and displays the current user’s expenses.
+- Expense form is shown in a Bootstrap modal for add/edit actions.
+- Delete operations require confirmation.
+- `ExpenseDashboardComponent` aggregates expenses into totals, averages, counts, and chart data.
 
-* ASP.NET Core 8 Web API
-* C#
-* Entity Framework Core
-* SQL Server
-* JWT Authentication
-* Cookie-Based Authentication
-* Refresh Tokens
-* LINQ
+## Important files
 
-### Tools & Technologies
+- `src/app/app.ts` — standalone root component
+- `src/app/app.routes.ts` — client-side route definitions
+- `src/app/app.config.ts` — router, HTTP client, and interceptor providers
+- `src/app/features/auth/services/auth.service.ts` — authentication service
+- `src/app/features/auth/interceptors/auth.interceptor.ts` — HTTP auth interceptor
+- `src/app/features/auth/guards/auth.guard.ts` — auth guard for protected routes
+- `src/app/features/expense/services/expense.service.ts` — expense API service
+- `src/app/pages/expense-dashboard/expense-dashboard.component.ts` — dashboard page
+- `src/app/features/expense/components/expense-list/expense-list.component.ts` — expense list page
 
-* Visual Studio 2022
-* Swagger / OpenAPI
-* Git
-* GitHub
+## Local development
 
----
-
-## Project Structure
-
-```text
-TrackNest
-│
-├── TrackNest.API
-│
-├── TrackNest.Application
-│   ├── DTOs
-│   ├── Interfaces
-│   └── Services
-│
-├── TrackNest.Domain
-│   └── Entities
-│
-└── TrackNest.Infrastructure
-    ├── Persistence
-    ├── Services
-    └── Repositories
-```
-
----
-
-## Authentication Flow
-
-1. User registers and creates an account.
-2. User logs in with valid credentials.
-3. API generates a JWT Access Token.
-4. API generates a Refresh Token.
-5. Tokens are stored in secure HttpOnly cookies.
-6. Protected endpoints validate the Access Token.
-7. When the Access Token expires, the Refresh Token is used to generate a new Access Token.
-8. Users remain authenticated without repeatedly logging in.
-
----
-
-## Database Entities
-
-### User
-
-| Field                  | Type     |
-| ---------------------- | -------- |
-| Id                     | int      |
-| Username               | string   |
-| Email                  | string   |
-| Password               | string   |
-| RefreshToken           | string   |
-| RefreshTokenExpiryTime | datetime |
-
-### Expense
-
-| Field       | Type     |
-| ----------- | -------- |
-| Id          | int      |
-| Amount      | decimal  |
-| Category    | string   |
-| Description | string   |
-| ExpenseDate | datetime |
-| UserId      | int      |
-
----
-
-## API Endpoints
-
-### Authentication
-
-| Method | Endpoint                |
-| ------ | ----------------------- |
-| POST   | /api/auth/register      |
-| POST   | /api/auth/login         |
-| POST   | /api/auth/refresh-token |
-| POST   | /api/auth/logout        |
-
-### Expenses
-
-| Method | Endpoint           |
-| ------ | ------------------ |
-| GET    | /api/expenses      |
-| GET    | /api/expenses/{id} |
-| POST   | /api/expenses      |
-| PUT    | /api/expenses/{id} |
-| DELETE | /api/expenses/{id} |
-
----
-
-## API Documentation & Testing
-
-The API is documented and tested using Swagger/OpenAPI.
-
-Swagger provides:
-
-* Interactive API documentation
-* Endpoint testing
-* Request and Response visualization
-* Authentication testing
-* API contract verification
-
-After running the application, Swagger can be accessed using:
-
-```text
-https://localhost:{port}/swagger
-```
-
----
-
-## Getting Started
-
-### Clone Repository
+Run the Angular app locally:
 
 ```bash
-git clone https://github.com/your-github-username/TrackNest.git
+npm install
+npm start
 ```
 
-### Restore Packages
+Then open `http://localhost:4200`.
 
-```bash
-dotnet restore
-```
+## Notes
 
-### Apply Database Migrations
-
-```bash
-dotnet ef database update --project TrackNest.Infrastructure --startup-project TrackNest.API
-```
-
-### Run Application
-
-```bash
-dotnet run --project TrackNest.API
-```
-
----
-
-## Key Concepts Demonstrated
-
-* ASP.NET Core Web API
-* Clean Architecture
-* Entity Framework Core
-* SQL Server
-* JWT Authentication
-* Cookie-Based Authentication
-* Refresh Token Flow
-* Dependency Injection
-* Repository Pattern
-* RESTful API Design
-* User-Based Authorization
-* Secure Authentication Practices
-
----
-
-## Future Enhancements
-
-* Role-Based Authorization
-* Global Exception Handling Middleware
-* Serilog Logging
-* Pagination
-* Filtering & Search
-* Docker Support
-* RabbitMQ Integration
-* Azure Deployment
-* CI/CD Pipeline
-* Unit Testing
-
----
-
-## Author
-
-**Prabhakar Koranga**
-
-Full Stack Developer
-
-**Tech Stack:** .NET | Angular | SQL Server
+- API URLs are currently configured to `https://localhost:7090` and should be updated to match the backend environment.
+- Refresh token support is expected to use an HTTP-only cookie from the backend.
+- This project uses Bootstrap for styling and modals.
