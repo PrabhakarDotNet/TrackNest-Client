@@ -198,7 +198,30 @@
     align-items: stretch;
   }
 
+  .dashboard-user {
+    width: 100%;
+    word-break: break-word;
+  }
+
+  .dashboard-actions button {
+    width: 100%;
+  }
+
   .chart-bars {
-    min-height: 180px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-topbar {
+    gap: 1rem;
+  }
+
+  .dashboard-chart-card {
+    padding: 1.25rem;
+  }
+
+  .summary-card {
+    padding: 1rem;
   }
 }

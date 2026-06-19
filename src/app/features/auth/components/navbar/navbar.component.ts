@@ -11,9 +11,11 @@ import { AuthService } from '../../services/auth.service';
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
         <a class="navbar-brand" routerLink="/dashboard">TrackNest</a>
-        
-        <div class="navbar-collapse ms-auto">
-          <ul class="navbar-nav">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+          <ul class="navbar-nav align-items-center">
             <li class="nav-item" *ngIf="isAuthenticated">
               <span class="nav-text me-3">{{ getCurrentUserName() }}</span>
             </li>
@@ -35,6 +37,14 @@ import { AuthService } from '../../services/auth.service';
   styles: [`
     .navbar-text {
       color: #333;
+    }
+
+    .navbar-nav .nav-link {
+      color: rgba(0, 0, 0, 0.8);
+    }
+
+    .navbar-nav .nav-link:hover {
+      color: #0d6efd;
     }
   `]
 })

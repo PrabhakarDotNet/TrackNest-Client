@@ -149,3 +149,55 @@
 .confirm-modal-content button.btn-danger:hover {
   background: #db2777;
 }
+
+@media (max-width: 768px) {
+  .expense-page {
+    padding: 0.75rem;
+  }
+
+  .expense-header {
+    padding: 1.25rem 1rem;
+    border-radius: 1.5rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+  }
+
+  .add-btn {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .expense-table-card {
+    padding: 1.25rem;
+  }
+
+  .table-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .description-cell {
+    white-space: normal;
+    max-width: 100%;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .action-buttons button {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 575px) {
+  .expense-table-card table th,
+  .expense-table-card table td {
+    font-size: 0.9rem;
+  }
+}
