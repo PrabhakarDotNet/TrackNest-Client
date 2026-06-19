@@ -3,13 +3,14 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Expense } from '../models/expense.model';
 import { AuthService } from '../../auth/services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ExpenseService {
 
-  private apiUrl = 'https://localhost:7090/api/Expenses'; // change to your .NET API
+  private apiUrl = `${environment.apiUrl}/api/Expenses`;
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 

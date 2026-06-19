@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment.production';
 
 interface UserProfile {
   id: number;
@@ -19,8 +20,8 @@ interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'https://localhost:7090/api/UserProfile'; // change to your .NET API
-  private authUrl = 'https://localhost:7090/api/Auth'; // Auth endpoints
+  private apiUrl = `${environment.apiUrl}/api/UserProfile`;
+  private authUrl = `${environment.apiUrl}/api/Auth`;
   private currentUserKey = 'tracknest-current-user';
   private accessTokenKey = 'tracknest-access-token';
   private refreshTokenKey = 'tracknest-refresh-token';
