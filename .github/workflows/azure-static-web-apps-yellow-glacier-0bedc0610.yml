@@ -25,11 +25,9 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
-        working-directory: TrackNest.Client
 
       - name: Build Angular App
         run: npx ng build --configuration production
-        working-directory: TrackNest.Client
 
       - name: Build And Deploy
         id: builddeploy
@@ -38,7 +36,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_GLACIER_0BEDC0610 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "TrackNest.Client"
+          app_location: "/"
           api_location: ""
           output_location: "dist/TrackNest.Client/browser"
           skip_app_build: true
