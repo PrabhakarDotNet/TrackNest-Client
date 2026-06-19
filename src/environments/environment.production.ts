@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://tracknest-api-grbfe3ascsdsh6c0.malaysiawest-01.azurewebsites.net'
+  apiUrl: 'https://yellow-glacier-0bedc0610.7.azurestaticapps.net'
 };
