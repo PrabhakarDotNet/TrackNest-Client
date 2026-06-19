@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://your-actual-api.azurewebsites.net'
+  apiUrl: 'https://tracknest-api-grbfe3ascsdsh6c0.malaysiawest-01.azurewebsites.net'
 };
