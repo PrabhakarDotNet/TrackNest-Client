@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
-import { environment } from '../../../../environments/environment.production';
+import { environment } from '../../../../environments/environment';
 
 interface UserProfile {
   id: number;
@@ -11,9 +11,8 @@ interface UserProfile {
 }
 
 interface AuthResponse {
-  AccessToken: string;
-  RefreshToken?: string;
-  User?: UserProfile;
+  accessToken: string;
+  user?: UserProfile;
 }
 
 @Injectable({
@@ -24,43 +23,35 @@ export class AuthService {
   private authUrl = `${environment.apiUrl}/api/Auth`;
   private currentUserKey = 'tracknest-current-user';
   private accessTokenKey = 'tracknest-access-token';
-  private refreshTokenKey = 'tracknest-refresh-token';
 
   constructor(private http: HttpClient) {}
 
   login(username: string, password: string): Observable<boolean> {
     return this.http
-      .post<AuthResponse>(`${this.authUrl}/login`, { username, password }, { withCredentials: true })
+      .post<AuthResponse>(`${this.authUrl}/login`, { username, password })
       .pipe(
         tap((response) => {
-          const accessToken = response?.AccessToken ?? (response as any)?.accessToken;
-          const user = response?.User ?? (response as any)?.user;
-
-          if (accessToken) {
-            this.setAccessToken(accessToken);
-            if (user) {
-              this.setCurrentUser(user);
+          if (response?.accessToken) {
+            this.setAccessToken(response.accessToken);
+            if (response.user) {
+              this.setCurrentUser(response.user);
             }
           }
         }),
-        map((response) => !!(response?.AccessToken ?? (response as any)?.accessToken)),
+        map((response) => !!response?.accessToken),
         catchError(() => of(false))
       );
   }
 
   signup(username: string, email: string, password: string): Observable<boolean> {
-    const payload = { username, email, password };
     return this.http
-      .post<AuthResponse>(`${this.authUrl}/signup`, payload, { withCredentials: true })
+      .post<AuthResponse>(`${this.authUrl}/signup`, { username, email, password })
       .pipe(
         tap((response) => {
-          const accessToken = response?.AccessToken ?? (response as any)?.accessToken;
-          const user = response?.User ?? (response as any)?.user;
-
-          if (accessToken) {
-            this.setAccessToken(accessToken);
-            if (user) {
-              this.setCurrentUser(user);
+          if (response?.accessToken) {
+            this.setAccessToken(response.accessToken);
+            if (response.user) {
+              this.setCurrentUser(response.user);
             }
           }
         }),
@@ -72,13 +63,6 @@ export class AuthService {
       );
   }
 
-  // ===== TOKEN MANAGEMENT =====
-
-  setTokens(accessToken: string, refreshToken: string): void {
-    this.setAccessToken(accessToken);
-    // refreshToken is httpOnly cookie - handled by browser automatically
-  }
-
   setAccessToken(accessToken: string): void {
     localStorage.setItem(this.accessTokenKey, accessToken);
   }
@@ -87,51 +71,33 @@ export class AuthService {
     return localStorage.getItem(this.accessTokenKey);
   }
 
-  getRefreshToken(): string | null {
-    // refreshToken is httpOnly cookie - cannot access from JavaScript
-    // Browser sends it automatically with requests (withCredentials: true)
-    return null;
-  }
-
   clearTokens(): void {
     localStorage.removeItem(this.accessTokenKey);
-    // refreshToken is httpOnly cookie - backend clears it on logout
   }
 
   isAuthenticated(): boolean {
     return !!this.getAccessToken();
   }
 
-  // ===== REFRESH TOKEN FLOW =====
-
   refreshToken(): Observable<AuthResponse> {
-    // refreshToken is httpOnly cookie - browser sends it automatically
-    // No need to pass it in the body
     return this.http
       .post<AuthResponse>(`${this.authUrl}/refresh`, {}, { withCredentials: true })
       .pipe(
         tap((response) => {
-          const accessToken = response?.AccessToken ?? (response as any)?.accessToken;
-          if (accessToken) {
-            this.setAccessToken(accessToken);
+          if (response?.accessToken) {
+            this.setAccessToken(response.accessToken);
           }
         }),
         catchError((error) => {
           console.error('Token refresh failed', error);
           this.logout();
-          return of().pipe(
-            map(() => {
-              throw error;
-            })
-          );
+          return of().pipe(map(() => { throw error; }));
         })
       );
   }
 
-  // ===== USER MANAGEMENT =====
-
   getProfile(): Observable<UserProfile> {
-    return this.http.get<UserProfile>(`${this.apiUrl}/me`, { withCredentials: true });
+    return this.http.get<UserProfile>(`${this.apiUrl}/me`);
   }
 
   loadProfile(): Observable<boolean> {
@@ -155,8 +121,7 @@ export class AuthService {
   }
 
   getCurrentUserId(): number | null {
-    const user = this.getCurrentUser();
-    return user?.id ?? null;
+    return this.getCurrentUser()?.id ?? null;
   }
 
   logout(): void {

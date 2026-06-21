@@ -1,19 +1,29 @@
 <div class="auth-page">
   <div class="auth-card">
+
     <div class="auth-header">
+      <div class="brand-icon">
+        <i class="bi bi-nest"></i>
+      </div>
       <h3>Welcome back</h3>
-      <p>Login to your TrackNest account and manage expenses quickly.</p>
+      <p>Login to your TrackNest account</p>
     </div>
 
     <form (ngSubmit)="login()" class="auth-form">
       <div class="mb-3">
         <label class="form-label">Username</label>
-        <input type="text" class="form-control" [(ngModel)]="username" name="username" required />
+        <div class="input-wrapper">
+          <span class="input-icon">👤</span>
+          <input type="text" class="form-control" [(ngModel)]="username" name="username" placeholder="Enter username" required />
+        </div>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Password</label>
-        <input type="password" class="form-control" [(ngModel)]="password" name="password" required />
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input type="password" class="form-control" [(ngModel)]="password" name="password" placeholder="Enter password" required />
+        </div>
       </div>
 
       <div *ngIf="message" class="alert alert-warning py-2">{{ message }}</div>
@@ -27,5 +37,6 @@
       <span>New here?</span>
       <a routerLink="/signup">Create an account</a>
     </div>
+
   </div>
 </div>
