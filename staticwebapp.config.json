@@ -1,6 +1,7 @@
 {
   "navigationFallback": {
-    "rewrite": "/index.html"
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*", "/*.css", "/*.js", "/*.ico"]
   },
   "globalHeaders": {
     "Cache-Control": "no-cache, no-store, must-revalidate",
