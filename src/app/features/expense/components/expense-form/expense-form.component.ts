@@ -1,9 +1,11 @@
 import { Component, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { ExpenseService } from '../../services/expense.service';
 import { AuthService } from '../../../auth/services/auth.service';
 import { Expense } from '../../models/expense.model';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-expense-form',
@@ -17,6 +19,8 @@ export class ExpenseFormComponent implements OnChanges {
   @Input() expenseInput: Expense | null = null;
 
   aiSuggested = false;
+  aiLoading = false;
+  private debounceTimer: any;
 
   readonly categories = [
     'Food & Dining',
@@ -27,19 +31,9 @@ export class ExpenseFormComponent implements OnChanges {
     'Entertainment',
     'Sports & Fitness',
     'Education',
+    'Investment',
     'Other'
   ];
-
-  private readonly categoryRules: Record<string, string[]> = {
-    'Food & Dining': ['lunch','dinner','breakfast','restaurant','cafe','pizza','burger','tea','coffee','snack','meal','grocery','vegetables','fruit','sweets'],
-    'Transport': ['petrol','diesel','uber','ola','auto','taxi','bus','train','metro','fuel','cab','rickshaw','flight','ticket'],
-    'Sports & Fitness': ['carrom','cricket','football','badminton','gym','sports','fitness','yoga','cycling','swimming','chess'],
-    'Health': ['medicine','doctor','hospital','pharmacy','clinic','tablet','injection','checkup','medical'],
-    'Shopping': ['shirt','shoes','clothes','amazon','flipkart','mobile','laptop','watch','bag'],
-    'Entertainment': ['movie','netflix','hotstar','youtube','concert','show','spotify','music'],
-    'Bills & Utilities': ['electricity','wifi','internet','rent','water','gas','recharge','insurance','emi'],
-    'Education': ['book','course','fee','tuition','school','college','coaching'],
-  };
 
   expense: Expense = {
     id: 0,
@@ -51,7 +45,8 @@ export class ExpenseFormComponent implements OnChanges {
 
   constructor(
     private expenseService: ExpenseService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
 
   ngOnChanges(changes: SimpleChanges) {
@@ -74,16 +69,33 @@ export class ExpenseFormComponent implements OnChanges {
   }
 
   onDescriptionInput(event: Event): void {
-    const val = (event.target as HTMLInputElement).value.toLowerCase().trim();
+    const val = (event.target as HTMLInputElement).value.trim();
     this.aiSuggested = false;
+
     if (!val || val.length < 3) return;
-    for (const [category, keywords] of Object.entries(this.categoryRules)) {
-      if (keywords.some(k => val.includes(k))) {
-        this.expense.category = category;
+
+    // debounce — wait 600ms after user stops typing
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => {
+      this.suggestCategory(val);
+    }, 600);
+  }
+
+  private suggestCategory(description: string): void {
+    this.aiLoading = true;
+    this.http.post<{ category: string }>(
+      `${environment.aiApiUrl}/suggest-category`,
+      { description }
+    ).subscribe({
+      next: (response) => {
+        this.expense.category = response.category;
         this.aiSuggested = true;
-        break;
+        this.aiLoading = false;
+      },
+      error: () => {
+        this.aiLoading = false;
       }
-    }
+    });
   }
 
   saveExpense() {
@@ -127,5 +139,6 @@ export class ExpenseFormComponent implements OnChanges {
       expenseDate: new Date().toISOString().slice(0, 10)
     };
     this.aiSuggested = false;
+    this.aiLoading = false;
   }
 }

@@ -34,8 +34,9 @@
         name="description"
         (input)="onDescriptionInput($event)"
       />
-      <div class="hint" *ngIf="!aiSuggested">Type description → AI will suggest a category</div>
-      <div class="hint hint--ai" *ngIf="aiSuggested">✓ Category auto-filled by AI — you can change it</div>
+      <div class="hint" *ngIf="!aiSuggested && !aiLoading">Type description → AI will suggest a category</div>
+      <div class="hint" *ngIf="aiLoading">🤖 AI is thinking...</div>
+      <div class="hint hint--ai" *ngIf="aiSuggested && !aiLoading">✓ Category auto-filled by AI — you can change it</div>
     </div>
 
     <div class="field">
