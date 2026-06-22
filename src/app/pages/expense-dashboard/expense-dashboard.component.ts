@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ExpenseListComponent } from '../../features/expense/components/expense-list/expense-list.component';
 import { ExpenseService } from '../../features/expense/services/expense.service';
 import { AuthService } from '../../features/auth/services/auth.service';
@@ -17,7 +17,8 @@ interface ChartPoint {
   standalone: true,
   imports: [CommonModule, ExpenseListComponent],
   templateUrl: './expense-dashboard.component.html',
-  styleUrls: ['./expense-dashboard.component.scss']
+  styleUrls: ['./expense-dashboard.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExpenseDashboardComponent implements OnInit {
   expenses: Expense[] = [];
@@ -30,7 +31,8 @@ export class ExpenseDashboardComponent implements OnInit {
   constructor(
     private expenseService: ExpenseService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   get currentUsername(): string {
@@ -57,11 +59,13 @@ export class ExpenseDashboardComponent implements OnInit {
         this.averageExpense = this.expenseCount ? this.totalExpense / this.expenseCount : 0;
         this.chartData = this.buildChart(data);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.expenses = [];
         this.chartData = this.buildChart([]);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }

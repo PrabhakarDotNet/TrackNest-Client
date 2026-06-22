@@ -1,0 +1,57 @@
+<div class="chat-wrapper">
+
+  <div class="chat-window" [class.open]="isOpen">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <div class="chat-avatar">🤖</div>
+        <div>
+          <div class="chat-title">TrackNest AI</div>
+          <div class="chat-subtitle">Ask about your expenses</div>
+        </div>
+      </div>
+      <button class="chat-close-btn" (click)="toggleChat()">✕</button>
+    </div>
+
+    <div class="chat-messages" #messagesContainer>
+      <div
+        *ngFor="let msg of messages"
+        class="chat-message"
+        [class.user]="msg.role === 'user'"
+        [class.bot]="msg.role === 'bot'"
+      >
+        <div class="message-bubble" [innerHTML]="formatMessage(msg.content)"></div>
+        <div class="message-time">{{ msg.timestamp | date: 'hh:mm a' }}</div>
+      </div>
+
+      <div class="chat-message bot" *ngIf="isLoading">
+        <div class="message-bubble typing-indicator">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <input
+        type="text"
+        class="chat-input"
+        placeholder="Ask about your expenses..."
+        [(ngModel)]="userInput"
+        (keydown)="onKeyDown($event)"
+        [disabled]="isLoading"
+      />
+      <button
+        class="chat-send-btn"
+        (click)="sendMessage()"
+        [disabled]="isLoading || !userInput.trim()"
+      >
+        ➤
+      </button>
+    </div>
+  </div>
+
+  <button class="chat-fab" (click)="toggleChat()" [class.active]="isOpen">
+    <span *ngIf="!isOpen">🤖</span>
+    <span *ngIf="isOpen">✕</span>
+  </button>
+
+</div>
