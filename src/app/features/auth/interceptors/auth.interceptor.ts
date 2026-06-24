@@ -1,91 +1,132 @@
 import { Injectable } from '@angular/core';
-import {
-  HttpEvent,
-  HttpInterceptor,
-  HttpHandler,
-  HttpRequest,
-  HttpErrorResponse
-} from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, filter, take, switchMap } from 'rxjs/operators';
-import { AuthService } from '../services/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment';
 
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  private isRefreshing = false;
-  private refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+interface UserProfile {
+  id: number;
+  username: string;
+  email: string;
+}
 
-  constructor(private authService: AuthService) {}
+interface AuthResponse {
+  accessToken: string;
+  user?: UserProfile;
+}
 
-  intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Add access token to request if available and enable sending cookies.
-    const accessToken = this.authService.getAccessToken();
-    if (accessToken) {
-      request = this.addTokenToRequest(request, accessToken);
-    } else {
-      request = request.clone({ withCredentials: true });
-    }
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  private apiUrl = `${environment.apiUrl}/api/UserProfile`;
+  private authUrl = `${environment.apiUrl}/api/Auth`;
+  private currentUserKey = 'tracknest-current-user';
+  private accessTokenKey = 'tracknest-access-token';
 
-    console.log('AuthInterceptor request', {
-      url: request.url,
-      auth: request.headers.get('Authorization'),
-      withCredentials: request.withCredentials
-    });
+  constructor(private http: HttpClient) {}
 
-    return next.handle(request).pipe(
-      catchError((error: HttpErrorResponse) => {
-        // Handle 401 Unauthorized
-        if (error.status === 401 && !this.isTokenRefreshRequest(request)) {
-          return this.handleUnauthorized(request, next);
-        }
-        return throwError(() => error);
+  login(username: string, password: string): Observable<boolean> {
+    return this.http
+      .post<AuthResponse>(`${this.authUrl}/login`, { username, password })
+      .pipe(
+        tap((response) => {
+          if (response?.accessToken) {
+            this.setAccessToken(response.accessToken);
+            if (response.user) {
+              this.setCurrentUser(response.user);
+            }
+          }
+        }),
+        map((response) => !!response?.accessToken),
+        catchError(() => of(false))
+      );
+  }
+
+  signup(username: string, email: string, password: string): Observable<boolean> {
+    return this.http
+      .post<AuthResponse>(`${this.authUrl}/signup`, { username, email, password })
+      .pipe(
+        tap((response) => {
+          if (response?.accessToken) {
+            this.setAccessToken(response.accessToken);
+            if (response.user) {
+              this.setCurrentUser(response.user);
+            }
+          }
+        }),
+        map(() => true),
+        catchError((error) => {
+          console.error('Signup failed', error.error ?? error);
+          return of(false);
+        })
+      );
+  }
+
+  setAccessToken(accessToken: string): void {
+    localStorage.setItem(this.accessTokenKey, accessToken);
+  }
+
+  getAccessToken(): string | null {
+    return localStorage.getItem(this.accessTokenKey);
+  }
+
+  clearTokens(): void {
+    localStorage.removeItem(this.accessTokenKey);
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.getAccessToken();
+  }
+
+  refreshToken(): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>(`${this.authUrl}/refresh`, {}, { withCredentials: true })
+      .pipe(
+        tap((response) => {
+          if (response?.accessToken) {
+            this.setAccessToken(response.accessToken);
+          }
+        }),
+        // FIX 2: properly re-throw the error so the interceptor's catchError fires
+        catchError((error) => {
+          console.error('Token refresh failed', error);
+          this.logout();
+          return throwError(() => error);
+        })
+      );
+  }
+
+  getProfile(): Observable<UserProfile> {
+    return this.http.get<UserProfile>(`${this.apiUrl}/me`);
+  }
+
+  loadProfile(): Observable<boolean> {
+    return this.getProfile().pipe(
+      tap((user) => this.setCurrentUser(user)),
+      map(() => true),
+      catchError((error) => {
+        console.error('Failed to load profile', error);
+        return of(false);
       })
     );
   }
 
-  private addTokenToRequest(request: HttpRequest<any>, token: string): HttpRequest<any> {
-    return request.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      },
-      withCredentials: true
-    });
+  setCurrentUser(user: UserProfile): void {
+    localStorage.setItem(this.currentUserKey, JSON.stringify(user));
   }
 
-  private handleUnauthorized(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    if (!this.isRefreshing) {
-      this.isRefreshing = true;
-      this.refreshTokenSubject.next(null);
-
-      return this.authService.refreshToken().pipe(
-        switchMap((response: any) => {
-          this.isRefreshing = false;
-          const newAccessToken = response?.accessToken ?? response?.AccessToken;
-          console.log('AuthInterceptor refreshed token', newAccessToken);
-          this.refreshTokenSubject.next(newAccessToken);
-
-          // Retry the original request with new token
-          return next.handle(this.addTokenToRequest(request, newAccessToken));
-        }),
-        catchError((error: any) => {
-          this.isRefreshing = false;
-          this.authService.logout();
-          return throwError(() => error);
-        })
-      );
-    } else {
-      // Wait for token refresh to complete, then retry
-      return this.refreshTokenSubject.pipe(
-        filter((token) => token != null),
-        take(1),
-        switchMap((token) => {
-          return next.handle(this.addTokenToRequest(request, token));
-        })
-      );
-    }
+  getCurrentUser(): UserProfile | null {
+    const raw = localStorage.getItem(this.currentUserKey);
+    return raw ? JSON.parse(raw) : null;
   }
 
-  private isTokenRefreshRequest(request: HttpRequest<any>): boolean {
-    return request.url.includes('/auth/refresh');
+  getCurrentUserId(): number | null {
+    return this.getCurrentUser()?.id ?? null;
+  }
+
+  logout(): void {
+    this.clearTokens();
+    localStorage.removeItem(this.currentUserKey);
   }
 }

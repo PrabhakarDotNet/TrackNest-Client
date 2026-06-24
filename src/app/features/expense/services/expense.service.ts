@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Expense } from '../models/expense.model';
-import { AuthService } from '../../auth/services/auth.service';
 import { environment } from '../../../../environments/environment';
 
 @Injectable({
@@ -12,33 +11,27 @@ export class ExpenseService {
 
   private apiUrl = `${environment.apiUrl}/api/Expenses`;
 
-  constructor(private http: HttpClient, private authService: AuthService) {}
+  constructor(private http: HttpClient) {}
 
-  private createAuthHeaders(): { headers: HttpHeaders; withCredentials: true } {
-    const token = this.authService.getAccessToken();
-    const headers = new HttpHeaders({
-      Authorization: token ? `Bearer ${token}` : ''
-    });
-    return { headers, withCredentials: true };
-  }
+  // No manual auth headers needed — AuthInterceptor handles this automatically
 
   getAll(): Observable<Expense[]> {
-    return this.http.get<Expense[]>(this.apiUrl, this.createAuthHeaders());
+    return this.http.get<Expense[]>(this.apiUrl);
   }
 
   getMyExpenses(): Observable<Expense[]> {
-    return this.http.get<Expense[]>(`${this.apiUrl}/my-expenses`, this.createAuthHeaders());
+    return this.http.get<Expense[]>(`${this.apiUrl}/my-expenses`);
   }
 
   delete(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`, this.createAuthHeaders());
+    return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
   create(expense: Expense): Observable<{ id: number }> {
-    return this.http.post<{ id: number }>(this.apiUrl, expense, this.createAuthHeaders());
+    return this.http.post<{ id: number }>(this.apiUrl, expense);
   }
 
   update(id: number, expense: Expense): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}`, expense, this.createAuthHeaders());
+    return this.http.put(`${this.apiUrl}/${id}`, expense);
   }
 }
