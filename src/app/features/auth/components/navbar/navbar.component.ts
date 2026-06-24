@@ -42,7 +42,10 @@ import { AuthService } from '../../services/auth.service';
     .navbar-nav .nav-link {
       color: rgba(0, 0, 0, 0.8);
     }
-
+    nav.navbar {
+      position: relative;
+      z-index: 1000;
+    }
     .navbar-nav .nav-link:hover {
       color: #0d6efd;
     }

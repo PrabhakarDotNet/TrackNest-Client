@@ -2,7 +2,6 @@ import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './features/auth/components/navbar/navbar.component';
 import { ChatWidgetComponent } from './features/chat/components/chat-widget/chat-widget.component';
-import { Expense } from './features/expense/models/expense.model';
 
 @Component({
   selector: 'app-root',
@@ -13,5 +12,4 @@ import { Expense } from './features/expense/models/expense.model';
 })
 export class App {
   protected readonly title = signal('TrackNest.Client');
-  expenses: Expense[] = [];
 }

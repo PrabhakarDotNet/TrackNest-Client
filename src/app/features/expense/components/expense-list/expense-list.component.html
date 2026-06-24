@@ -30,7 +30,7 @@
             <td class="text-primary">{{ e.amount | currency:'INR' }}</td>
             <td>{{ e.category }}</td>
             <td class="text-muted description-cell">{{ e.description }}</td>
-            <td>{{ e.expenseDate ? (e.expenseDate | date:'dd/MM/yyyy') : '—' }}</td>
+            <td>{{ e.expenseDate ? (e.expenseDate | date:'dd MMMM yyyy') : '—' }}</td>
             <td class="action-buttons text-nowrap">
               <button class="btn btn-sm btn-outline-warning me-2" (click)="openEditExpenseForm(e)">Edit</button>
               <button class="btn btn-sm btn-outline-danger" (click)="confirmDeleteExpense(e.id, e.description)">Delete</button>

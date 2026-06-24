@@ -34,7 +34,7 @@ export class ExpenseListComponent implements OnInit {
       next: (data: Expense[]) => {
         this.expenses = data;
         this.loading = false;
-        this.cdr.detectChanges(); // force Angular to update view
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.log(err);
