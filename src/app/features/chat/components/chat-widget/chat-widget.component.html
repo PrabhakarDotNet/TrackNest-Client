@@ -29,7 +29,7 @@
 
         <!-- Confirmation Card -->
         <div class="confirm-card" *ngIf="showConfirmCard && pendingExpense">
-          <p class="confirm-title">💳 Add this expense?</p>
+          <p class="confirm-title">💳 I found a new expense?</p>
           <div class="confirm-details">
             <span class="confirm-label">Description</span>
             <span class="confirm-value">{{ pendingExpense.description }}</span>
@@ -41,7 +41,7 @@
             <span class="confirm-value">{{ pendingExpense.category }}</span>
 
             <span class="confirm-label">Date</span>
-            <span class="confirm-value">{{ pendingExpense.expenseDate }}</span>
+            <span class="confirm-value"> {{ pendingExpense.expenseDate | date:'dd MMM yyyy' }}</span>
           </div>
           <div class="confirm-actions">
             <button class="btn-yes" (click)="confirmExpense()">✅ Yes, Add it</button>

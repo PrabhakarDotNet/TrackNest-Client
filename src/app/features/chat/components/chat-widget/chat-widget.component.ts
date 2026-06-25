@@ -23,21 +23,26 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
 
   isOpen = false;
-  isVisible = false;        // ✅ controls visibility on auth pages
+  isVisible = false;
   userInput = '';
   isLoading = false;
   sessionId = '';
   private shouldScroll = false;
   private expenses: Expense[] = [];
+
   pendingExpense: ExtractedExpense | null = null;
   showConfirmCard = false;
+
+  // Guided flow state
+  conversationStep: 'idle' | 'ask_amount' | 'ask_category' | 'ask_description' = 'idle';
+  partialExpense: Partial<ExtractedExpense> = {};
 
   private readonly authRoutes = ['/login', '/register'];
 
   messages: ChatMessage[] = [
     {
       role: 'bot',
-      content: 'Hi! I\'m your TrackNest AI assistant 🤖 Ask me anything about your expenses!',
+      content: 'Hi! I\'m your TrackNest AI assistant 🤖 Ask me anything about your expenses, or say something like "I spent ₹500 on dinner" and I\'ll help you add it!',
       timestamp: new Date()
     }
   ];
@@ -47,7 +52,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     private authService: AuthService,
     private expenseService: ExpenseService,
     private cdr: ChangeDetectorRef,
-    private router: Router              // ✅ injected
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -55,15 +60,13 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     this.sessionId = userId ? `user-${userId}` : `guest-${Date.now()}`;
     this.loadExpenses();
 
-    // ✅ Check visibility on initial load
     this.isVisible = !this.authRoutes.includes(this.router.url);
 
-    // ✅ Re-check on every route change
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
       this.isVisible = !this.authRoutes.includes(event.urlAfterRedirects);
-      if (!this.isVisible) this.isOpen = false; // close if navigated to auth page
+      if (!this.isVisible) this.isOpen = false;
       this.cdr.detectChanges();
     });
   }
@@ -72,10 +75,8 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     this.expenseService.getMyExpenses().subscribe({
       next: (data: Expense[]) => {
         this.expenses = data;
-        console.log('[ChatWidget] Loaded expenses:', data.length);
       },
-      error: (err) => {
-        console.error('[ChatWidget] Failed to load expenses:', err);
+      error: () => {
         this.expenses = [];
       }
     });
@@ -105,34 +106,81 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
       content: message,
       timestamp: new Date()
     }];
-
     this.userInput = '';
-    this.isLoading = true;
     this.shouldScroll = true;
+
+    // If we are in a guided step, handle it locally — no API call needed
+    if (this.conversationStep !== 'idle') {
+      this.handleGuidedStep(message);
+      return;
+    }
+
+    this.isLoading = true;
 
     this.chatService.extractExpense(message).pipe(
       switchMap((extracted: ExtractedExpense) => {
 
-        if (extracted.found && extracted.amount > 0) {
+        if (extracted.found) {
+          this.partialExpense = { ...extracted };
+          this.isLoading = false;
+
+          // Missing amount — ask first
+          if (!extracted.amount || extracted.amount <= 0) {
+            this.conversationStep = 'ask_amount';
+            this.messages = [...this.messages, {
+              role: 'bot',
+              content: 'How much did you spend? (Enter the amount in ₹)',
+              timestamp: new Date()
+            }];
+            this.shouldScroll = true;
+            this.cdr.detectChanges();
+            return of(null);
+          }
+
+          // Missing category — ask next
+          if (!extracted.category) {
+            this.conversationStep = 'ask_category';
+            this.messages = [...this.messages, {
+              role: 'bot',
+              content: `Got it — ₹${extracted.amount}. What category does this fall under?\n• Food & Dining\n• Transport\n• Health\n• Bills & Utilities\n• Investment\n• Sports & Fitness\n• Petrol\n• Others`,
+              timestamp: new Date()
+            }];
+            this.shouldScroll = true;
+            this.cdr.detectChanges();
+            return of(null);
+          }
+
+          // Missing description — ask last
+          if (!extracted.description) {
+            this.conversationStep = 'ask_description';
+            this.messages = [...this.messages, {
+              role: 'bot',
+              content: `Got it — ${extracted.category}. Add a short description (or type "skip" to leave blank):`,
+              timestamp: new Date()
+            }];
+            this.shouldScroll = true;
+            this.cdr.detectChanges();
+            return of(null);
+          }
+
+          // All fields present — show confirm card directly
           this.pendingExpense = extracted;
           this.showConfirmCard = true;
-          this.isLoading = false;
           this.shouldScroll = true;
           this.cdr.detectChanges();
           return of(null);
         }
 
+        // Not an expense intent — send to AI for normal Q&A
         return this.expenseService.getMyExpenses().pipe(
           switchMap((freshExpenses: Expense[]) => {
             this.expenses = freshExpenses;
-
             const expenseContext: ExpenseContext[] = freshExpenses.map(e => ({
               description: e.description,
               amount: e.amount,
               category: e.category,
               expenseDate: e.expenseDate ?? ''
             }));
-
             return this.chatService.sendMessage({
               session_id: this.sessionId,
               message,
@@ -153,8 +201,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
         this.shouldScroll = true;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        console.error('[ChatWidget] sendMessage error:', err);
+      error: () => {
         this.messages = [...this.messages, {
           role: 'bot',
           content: 'Sorry, I could not connect to the AI service. Please try again.',
@@ -167,46 +214,125 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     });
   }
 
-  confirmExpense(): void {
-  if (!this.pendingExpense) return;
+  private handleGuidedStep(input: string): void {
+    switch (this.conversationStep) {
 
-  const payload = {
-    description: this.pendingExpense.description,
-    amount: this.pendingExpense.amount,
-    category: this.pendingExpense.category,
-    expenseDate: this.pendingExpense.expenseDate
-  };
+      case 'ask_amount': {
+        const amount = parseFloat(input.replace(/[₹,\s]/g, ''));
+        if (isNaN(amount) || amount <= 0) {
+          this.messages = [...this.messages, {
+            role: 'bot',
+            content: 'Please enter a valid amount (e.g. 500 or ₹1200).',
+            timestamp: new Date()
+          }];
+          this.shouldScroll = true;
+          this.cdr.detectChanges();
+          return;
+        }
+        this.partialExpense.amount = amount;
+        this.conversationStep = 'ask_category';
+        this.messages = [...this.messages, {
+          role: 'bot',
+          content: `Got it — ₹${amount}. What category does this fall under?\n(e.g. Food & Dining, Transport, Health, Bills & Utilities, Investment, Sports & Fitness, Others)`,
+          timestamp: new Date()
+        }];
+        break;
+      }
 
-  this.expenseService.addExpense(payload).subscribe({
-    next: () => {
-      this.showConfirmCard = false;
-      this.messages = [...this.messages, {
-        role: 'bot',
-        content: `✅ Got it! **₹${payload.amount}** for **${payload.description}** added successfully!`,
-        timestamp: new Date()
-      }];
-      this.pendingExpense = null;
-      this.loadExpenses();
-      this.expenseService.triggerRefresh();   // ✅ notify expense list
-      this.shouldScroll = true;
-      this.cdr.detectChanges();
-    },
-    error: () => {
-      this.messages = [...this.messages, {
-        role: 'bot',
-        content: '❌ Failed to save expense. Please try again.',
-        timestamp: new Date()
-      }];
-      this.showConfirmCard = false;
-      this.pendingExpense = null;
-      this.cdr.detectChanges();
+      case 'ask_category': {
+        const validCategories = [
+          'food & dining', 'transport', 'health', 'bills & utilities',
+          'investment', 'sports & fitness', 'petrol', 'others'
+        ];
+
+        // Try to fuzzy-match what the user typed against valid categories
+        const inputLower = input.trim().toLowerCase();
+        const matched = validCategories.find(c => inputLower.includes(c) || c.includes(inputLower));
+
+        if (!matched) {
+          this.messages = [...this.messages, {
+            role: 'bot',
+            content: `Please choose a valid category:\n• Food & Dining\n• Transport\n• Health\n• Bills & Utilities\n• Investment\n• Sports & Fitness\n• Petrol\n• Others`,
+            timestamp: new Date()
+          }];
+          this.shouldScroll = true;
+          this.cdr.detectChanges();
+          return; // stay on ask_category step
+        }
+
+        // Capitalize matched category properly
+        this.partialExpense.category = validCategories
+          .find(c => c === matched)!
+          .replace(/\b\w/g, l => l.toUpperCase());
+
+        this.conversationStep = 'ask_description';
+        this.messages = [...this.messages, {
+          role: 'bot',
+          content: `Got it — ${this.partialExpense.category}. Add a short description (or type "skip" to leave blank):`,
+          timestamp: new Date()
+        }];
+        break;
+      }
+
+      case 'ask_description': {
+        this.partialExpense.description =
+          input.toLowerCase() === 'skip' ? '' : input.trim();
+        this.conversationStep = 'idle';
+
+        // All fields collected — show confirm card
+        this.pendingExpense = this.partialExpense as ExtractedExpense;
+        this.showConfirmCard = true;
+        this.partialExpense = {};
+        break;
+      }
     }
-  });
-}
+
+    this.shouldScroll = true;
+    this.cdr.detectChanges();
+  }
+
+  confirmExpense(): void {
+    if (!this.pendingExpense) return;
+
+    const payload = {
+      description: this.pendingExpense.description,
+      amount: this.pendingExpense.amount,
+      category: this.pendingExpense.category,
+      expenseDate: this.pendingExpense.expenseDate
+    };
+
+    this.expenseService.addExpense(payload).subscribe({
+      next: () => {
+        this.showConfirmCard = false;
+        this.messages = [...this.messages, {
+          role: 'bot',
+          content: `✅ Got it! **₹${payload.amount}** for **${payload.description}** added successfully!`,
+          timestamp: new Date()
+        }];
+        this.pendingExpense = null;
+        this.loadExpenses();
+        this.expenseService.triggerRefresh();
+        this.shouldScroll = true;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.messages = [...this.messages, {
+          role: 'bot',
+          content: '❌ Failed to save expense. Please try again.',
+          timestamp: new Date()
+        }];
+        this.showConfirmCard = false;
+        this.pendingExpense = null;
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   cancelExpense(): void {
     this.showConfirmCard = false;
     this.pendingExpense = null;
+    this.conversationStep = 'idle';
+    this.partialExpense = {};
     this.messages = [...this.messages, {
       role: 'bot',
       content: 'No problem! Let me know if you need anything else.',
