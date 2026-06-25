@@ -1,57 +1,86 @@
-<div class="chat-wrapper">
+<ng-container *ngIf="isVisible">
+  <div class="chat-wrapper">
 
-  <div class="chat-window" [class.open]="isOpen">
-    <div class="chat-header">
-      <div class="chat-header-info">
-        <div class="chat-avatar">🤖</div>
-        <div>
-          <div class="chat-title">TrackNest AI</div>
-          <div class="chat-subtitle">Ask about your expenses</div>
+    <!-- Backdrop: dims page when chat is open -->
+    <div class="chat-backdrop" [class.open]="isOpen" (click)="toggleChat()"></div>
+
+    <div class="chat-window" [class.open]="isOpen">
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="chat-avatar">🤖</div>
+          <div>
+            <div class="chat-title">TrackNest AI</div>
+            <div class="chat-subtitle">Ask about your expenses</div>
+          </div>
+        </div>
+        <button class="chat-close-btn" (click)="toggleChat()">✕</button>
+      </div>
+
+      <div class="chat-messages" #messagesContainer>
+        <div
+          *ngFor="let msg of messages"
+          class="chat-message"
+          [class.user]="msg.role === 'user'"
+          [class.bot]="msg.role === 'bot'"
+        >
+          <div class="message-bubble" [innerHTML]="formatMessage(msg.content)"></div>
+          <div class="message-time">{{ msg.timestamp | date: 'hh:mm a' }}</div>
+        </div>
+
+        <!-- Confirmation Card -->
+        <div class="confirm-card" *ngIf="showConfirmCard && pendingExpense">
+          <p class="confirm-title">💳 Add this expense?</p>
+          <div class="confirm-details">
+            <span class="confirm-label">Description</span>
+            <span class="confirm-value">{{ pendingExpense.description }}</span>
+
+            <span class="confirm-label">Amount</span>
+            <span class="confirm-value">₹{{ pendingExpense.amount }}</span>
+
+            <span class="confirm-label">Category</span>
+            <span class="confirm-value">{{ pendingExpense.category }}</span>
+
+            <span class="confirm-label">Date</span>
+            <span class="confirm-value">{{ pendingExpense.expenseDate }}</span>
+          </div>
+          <div class="confirm-actions">
+            <button class="btn-yes" (click)="confirmExpense()">✅ Yes, Add it</button>
+            <button class="btn-no" (click)="cancelExpense()">❌ No</button>
+          </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div class="chat-message bot" *ngIf="isLoading">
+          <div class="message-bubble typing-indicator">
+            <span></span><span></span><span></span>
+          </div>
         </div>
       </div>
-      <button class="chat-close-btn" (click)="toggleChat()">✕</button>
-    </div>
 
-    <div class="chat-messages" #messagesContainer>
-      <div
-        *ngFor="let msg of messages"
-        class="chat-message"
-        [class.user]="msg.role === 'user'"
-        [class.bot]="msg.role === 'bot'"
-      >
-        <div class="message-bubble" [innerHTML]="formatMessage(msg.content)"></div>
-        <div class="message-time">{{ msg.timestamp | date: 'hh:mm a' }}</div>
+      <div class="chat-input-area">
+        <input
+          type="text"
+          class="chat-input"
+          placeholder="Ask about your expenses..."
+          [(ngModel)]="userInput"
+          (keydown)="onKeyDown($event)"
+          [disabled]="isLoading"
+        />
+        <button
+          class="chat-send-btn"
+          (click)="sendMessage()"
+          [disabled]="isLoading || !userInput.trim()"
+        >
+          ➤
+        </button>
       </div>
-
-      <div class="chat-message bot" *ngIf="isLoading">
-        <div class="message-bubble typing-indicator">
-          <span></span><span></span><span></span>
-        </div>
-      </div>
     </div>
 
-    <div class="chat-input-area">
-      <input
-        type="text"
-        class="chat-input"
-        placeholder="Ask about your expenses..."
-        [(ngModel)]="userInput"
-        (keydown)="onKeyDown($event)"
-        [disabled]="isLoading"
-      />
-      <button
-        class="chat-send-btn"
-        (click)="sendMessage()"
-        [disabled]="isLoading || !userInput.trim()"
-      >
-        ➤
-      </button>
-    </div>
+    <!-- FAB trigger button -->
+    <button class="chat-fab" (click)="toggleChat()" [class.active]="isOpen">
+      <span *ngIf="!isOpen">🤖</span>
+      <span *ngIf="isOpen">✕</span>
+    </button>
+
   </div>
-
-  <button class="chat-fab" (click)="toggleChat()" [class.active]="isOpen">
-    <span *ngIf="!isOpen">🤖</span>
-    <span *ngIf="isOpen">✕</span>
-  </button>
-
-</div>
+</ng-container>

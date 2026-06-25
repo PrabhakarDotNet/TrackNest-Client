@@ -24,8 +24,11 @@ export class ExpenseListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadExpenses();
-  }
+  this.loadExpenses();                           
+  this.expenseService.refresh$.subscribe(() => {
+    this.loadExpenses();                         
+  });
+}
 
   loadExpenses() {
     this.loading = true;

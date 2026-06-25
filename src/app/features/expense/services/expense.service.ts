@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';          // ✅ add Subject
 import { Expense } from '../models/expense.model';
 import { environment } from '../../../../environments/environment';
 
@@ -11,9 +11,15 @@ export class ExpenseService {
 
   private apiUrl = `${environment.apiUrl}/api/Expenses`;
 
+  // ✅ Any component can trigger this, any component can listen
+  private refreshTrigger = new Subject<void>();
+  refresh$ = this.refreshTrigger.asObservable();
+
   constructor(private http: HttpClient) {}
 
-  // No manual auth headers needed — AuthInterceptor handles this automatically
+  triggerRefresh(): void {
+    this.refreshTrigger.next();    // ✅ emit signal
+  }
 
   getAll(): Observable<Expense[]> {
     return this.http.get<Expense[]>(this.apiUrl);
@@ -33,5 +39,9 @@ export class ExpenseService {
 
   update(id: number, expense: Expense): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}`, expense);
+  }
+
+  addExpense(payload: any): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/api/Expenses`, payload);
   }
 }

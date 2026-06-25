@@ -4,7 +4,9 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChatService, ChatMessage, ExpenseContext } from '../../services/chat.service';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { ChatService, ChatMessage, ExpenseContext, ExtractedExpense } from '../../services/chat.service';
 import { AuthService } from '../../../../features/auth/services/auth.service';
 import { ExpenseService } from '../../../../features/expense/services/expense.service';
 import { Expense } from '../../../../features/expense/models/expense.model';
@@ -21,11 +23,16 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
 
   isOpen = false;
+  isVisible = false;        // ✅ controls visibility on auth pages
   userInput = '';
   isLoading = false;
   sessionId = '';
   private shouldScroll = false;
   private expenses: Expense[] = [];
+  pendingExpense: ExtractedExpense | null = null;
+  showConfirmCard = false;
+
+  private readonly authRoutes = ['/login', '/register'];
 
   messages: ChatMessage[] = [
     {
@@ -39,24 +46,36 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     private chatService: ChatService,
     private authService: AuthService,
     private expenseService: ExpenseService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router              // ✅ injected
   ) {}
 
   ngOnInit(): void {
     const userId = this.authService.getCurrentUserId();
     this.sessionId = userId ? `user-${userId}` : `guest-${Date.now()}`;
     this.loadExpenses();
+
+    // ✅ Check visibility on initial load
+    this.isVisible = !this.authRoutes.includes(this.router.url);
+
+    // ✅ Re-check on every route change
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      this.isVisible = !this.authRoutes.includes(event.urlAfterRedirects);
+      if (!this.isVisible) this.isOpen = false; // close if navigated to auth page
+      this.cdr.detectChanges();
+    });
   }
 
-  // ✅ Extracted so we can call it again on send
   private loadExpenses(): void {
     this.expenseService.getMyExpenses().subscribe({
       next: (data: Expense[]) => {
         this.expenses = data;
-        console.log('[ChatWidget] Loaded expenses:', data.length); // debug
+        console.log('[ChatWidget] Loaded expenses:', data.length);
       },
       error: (err) => {
-        console.error('[ChatWidget] Failed to load expenses:', err); // debug: check for 401
+        console.error('[ChatWidget] Failed to load expenses:', err);
         this.expenses = [];
       }
     });
@@ -72,7 +91,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   toggleChat(): void {
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
-      this.loadExpenses(); // ✅ Refresh expenses every time widget opens
+      this.loadExpenses();
       this.shouldScroll = true;
     }
   }
@@ -91,26 +110,40 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     this.isLoading = true;
     this.shouldScroll = true;
 
-    // ✅ Always fetch fresh expenses right before sending
-    this.expenseService.getMyExpenses().pipe(
-      switchMap((freshExpenses: Expense[]) => {
-        this.expenses = freshExpenses; // keep local copy in sync
+    this.chatService.extractExpense(message).pipe(
+      switchMap((extracted: ExtractedExpense) => {
 
-        const expenseContext: ExpenseContext[] = freshExpenses.map(e => ({
-          description: e.description,
-          amount: e.amount,
-          category: e.category,
-          expenseDate: e.expenseDate ?? ''
-        }));
+        if (extracted.found && extracted.amount > 0) {
+          this.pendingExpense = extracted;
+          this.showConfirmCard = true;
+          this.isLoading = false;
+          this.shouldScroll = true;
+          this.cdr.detectChanges();
+          return of(null);
+        }
 
-        return this.chatService.sendMessage({
-          session_id: this.sessionId,
-          message,
-          expenses: expenseContext
-        });
+        return this.expenseService.getMyExpenses().pipe(
+          switchMap((freshExpenses: Expense[]) => {
+            this.expenses = freshExpenses;
+
+            const expenseContext: ExpenseContext[] = freshExpenses.map(e => ({
+              description: e.description,
+              amount: e.amount,
+              category: e.category,
+              expenseDate: e.expenseDate ?? ''
+            }));
+
+            return this.chatService.sendMessage({
+              session_id: this.sessionId,
+              message,
+              expenses: expenseContext
+            });
+          })
+        );
       })
     ).subscribe({
       next: (response) => {
+        if (!response) return;
         this.messages = [...this.messages, {
           role: 'bot',
           content: response.reply,
@@ -121,7 +154,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('[ChatWidget] sendMessage error:', err); // debug
+        console.error('[ChatWidget] sendMessage error:', err);
         this.messages = [...this.messages, {
           role: 'bot',
           content: 'Sorry, I could not connect to the AI service. Please try again.',
@@ -132,6 +165,55 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  confirmExpense(): void {
+  if (!this.pendingExpense) return;
+
+  const payload = {
+    description: this.pendingExpense.description,
+    amount: this.pendingExpense.amount,
+    category: this.pendingExpense.category,
+    expenseDate: this.pendingExpense.expenseDate
+  };
+
+  this.expenseService.addExpense(payload).subscribe({
+    next: () => {
+      this.showConfirmCard = false;
+      this.messages = [...this.messages, {
+        role: 'bot',
+        content: `✅ Got it! **₹${payload.amount}** for **${payload.description}** added successfully!`,
+        timestamp: new Date()
+      }];
+      this.pendingExpense = null;
+      this.loadExpenses();
+      this.expenseService.triggerRefresh();   // ✅ notify expense list
+      this.shouldScroll = true;
+      this.cdr.detectChanges();
+    },
+    error: () => {
+      this.messages = [...this.messages, {
+        role: 'bot',
+        content: '❌ Failed to save expense. Please try again.',
+        timestamp: new Date()
+      }];
+      this.showConfirmCard = false;
+      this.pendingExpense = null;
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+  cancelExpense(): void {
+    this.showConfirmCard = false;
+    this.pendingExpense = null;
+    this.messages = [...this.messages, {
+      role: 'bot',
+      content: 'No problem! Let me know if you need anything else.',
+      timestamp: new Date()
+    }];
+    this.shouldScroll = true;
+    this.cdr.detectChanges();
   }
 
   onKeyDown(event: KeyboardEvent): void {

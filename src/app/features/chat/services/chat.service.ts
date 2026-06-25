@@ -27,6 +27,15 @@ export interface ChatResponse {
   session_id: string;
 }
 
+export interface ExtractedExpense {
+  found: boolean;
+  description: string;
+  amount: number;
+  category: string;
+  expenseDate: string;
+  confidence: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -38,4 +47,10 @@ export class ChatService {
   sendMessage(request: ChatRequest): Observable<ChatResponse> {
     return this.http.post<ChatResponse>(this.apiUrl, request);
   }
+
+  extractExpense(message: string): Observable<ExtractedExpense> {
+  return this.http.post<ExtractedExpense>(`${environment.aiApiUrl}/extract-expense`, {
+    description: message
+  });
+}
 }
