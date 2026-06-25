@@ -6,8 +6,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService, ChatMessage, ExpenseContext } from '../../services/chat.service';
 import { AuthService } from '../../../../features/auth/services/auth.service';
-import { ExpenseService } from '../../../../features/expense/services/expense.service'; // ✅ import
+import { ExpenseService } from '../../../../features/expense/services/expense.service';
 import { Expense } from '../../../../features/expense/models/expense.model';
+import { switchMap, of } from 'rxjs';
 
 @Component({
   selector: 'app-chat-widget',
@@ -25,6 +26,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   sessionId = '';
   private shouldScroll = false;
   private expenses: Expense[] = [];
+
   messages: ChatMessage[] = [
     {
       role: 'bot',
@@ -43,13 +45,18 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   ngOnInit(): void {
     const userId = this.authService.getCurrentUserId();
     this.sessionId = userId ? `user-${userId}` : `guest-${Date.now()}`;
+    this.loadExpenses();
+  }
 
-   
-   this.expenseService.getMyExpenses().subscribe({
-  next: (data: Expense[]) => {
+  // ✅ Extracted so we can call it again on send
+  private loadExpenses(): void {
+    this.expenseService.getMyExpenses().subscribe({
+      next: (data: Expense[]) => {
         this.expenses = data;
+        console.log('[ChatWidget] Loaded expenses:', data.length); // debug
       },
-      error: () => {
+      error: (err) => {
+        console.error('[ChatWidget] Failed to load expenses:', err); // debug: check for 401
         this.expenses = [];
       }
     });
@@ -65,6 +72,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   toggleChat(): void {
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
+      this.loadExpenses(); // ✅ Refresh expenses every time widget opens
       this.shouldScroll = true;
     }
   }
@@ -83,18 +91,25 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     this.isLoading = true;
     this.shouldScroll = true;
 
-    const expenseContext: ExpenseContext[] = this.expenses.map(e => ({
-      description: e.description,
-      amount: e.amount,
-      category: e.category,
-      expenseDate: e.expenseDate ?? ''
-    }));
+    // ✅ Always fetch fresh expenses right before sending
+    this.expenseService.getMyExpenses().pipe(
+      switchMap((freshExpenses: Expense[]) => {
+        this.expenses = freshExpenses; // keep local copy in sync
 
-    this.chatService.sendMessage({
-      session_id: this.sessionId,
-      message,
-      expenses: expenseContext
-    }).subscribe({
+        const expenseContext: ExpenseContext[] = freshExpenses.map(e => ({
+          description: e.description,
+          amount: e.amount,
+          category: e.category,
+          expenseDate: e.expenseDate ?? ''
+        }));
+
+        return this.chatService.sendMessage({
+          session_id: this.sessionId,
+          message,
+          expenses: expenseContext
+        });
+      })
+    ).subscribe({
       next: (response) => {
         this.messages = [...this.messages, {
           role: 'bot',
@@ -105,7 +120,8 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
         this.shouldScroll = true;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        console.error('[ChatWidget] sendMessage error:', err); // debug
         this.messages = [...this.messages, {
           role: 'bot',
           content: 'Sorry, I could not connect to the AI service. Please try again.',
