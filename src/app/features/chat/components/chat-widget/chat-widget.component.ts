@@ -245,7 +245,6 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
           'investment', 'sports & fitness', 'petrol', 'others'
         ];
 
-        // Try to fuzzy-match what the user typed against valid categories
         const inputLower = input.trim().toLowerCase();
         const matched = validCategories.find(c => inputLower.includes(c) || c.includes(inputLower));
 
@@ -257,10 +256,9 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
           }];
           this.shouldScroll = true;
           this.cdr.detectChanges();
-          return; // stay on ask_category step
+          return;
         }
 
-        // Capitalize matched category properly
         this.partialExpense.category = validCategories
           .find(c => c === matched)!
           .replace(/\b\w/g, l => l.toUpperCase());
@@ -312,6 +310,13 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
         this.pendingExpense = null;
         this.loadExpenses();
         this.expenseService.triggerRefresh();
+
+        // Fire-and-forget RAG re-index so ChromaDB stays in sync
+        const userId = this.authService.getCurrentUserId();
+        if (userId) {
+          this.chatService.ingestExpenses(String(userId)).subscribe();
+        }
+
         this.shouldScroll = true;
         this.cdr.detectChanges();
       },
