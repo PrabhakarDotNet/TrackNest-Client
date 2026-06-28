@@ -1,0 +1,115 @@
+<div class="dashboard-page">
+  <div class="stats-grid">
+    <article class="stat-card featured">
+      <span>Total spent</span>
+      <strong>{{ totalExpense | currency:'INR':'symbol':'1.0-0' }}</strong>
+      <small>This month</small>
+    </article>
+
+    <article class="stat-card">
+      <span>Expenses</span>
+      <strong>{{ expenseCount }}</strong>
+      <small>Transactions</small>
+    </article>
+
+    <article class="stat-card">
+      <span>Average</span>
+      <strong class="accent-green">{{ averageExpense | currency:'INR':'symbol':'1.0-0' }}</strong>
+      <small>Per transaction</small>
+    </article>
+
+    <article class="stat-card">
+      <span>Categories</span>
+      <strong class="accent-yellow">{{ categorySummary.length }}</strong>
+      <small>Active groups</small>
+    </article>
+  </div>
+
+  <div class="analytics-grid">
+    <section class="panel monthly-panel">
+      <div class="panel-header">
+        <h2>Monthly overview</h2>
+        <button type="button">View all</button>
+      </div>
+
+      <div class="chart-bars">
+        <div class="chart-item" *ngFor="let item of chartData">
+          <div class="bar-track">
+            <div class="bar" [style.height.%]="item.height"></div>
+          </div>
+          <span>{{ item.month }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel category-panel">
+      <div class="panel-header">
+        <h2>By category</h2>
+        <button type="button">Details</button>
+      </div>
+
+      <div class="category-list">
+        <div class="category-row" *ngFor="let cat of categorySummary | slice:0:5">
+          <span class="dot" [style.background]="cat.color"></span>
+          <span class="category-name">{{ cat.category }}</span>
+          <div class="progress-track">
+            <div
+              class="progress-fill"
+              [style.width.%]="cat.percent"
+              [style.background]="cat.color">
+            </div>
+          </div>
+          <strong>{{ cat.total | currency:'INR':'symbol':'1.0-0' }}</strong>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel transactions-panel">
+    <div class="panel-header">
+      <h2>Recent transactions</h2>
+      <button type="button">View all</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let expense of expenses | slice:0:8">
+            <td>
+              <strong>{{ expense.description }}</strong>
+              <span>Expense record</span>
+            </td>
+            <td>
+              <span class="category-chip">{{ expense.category }}</span>
+            </td>
+            <td>{{ expense.amount | currency:'INR':'symbol':'1.0-0' }}</td>
+            <td>{{ expense.expenseDate | date:'dd MMM yyyy' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button type="button" aria-label="Edit expense">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" aria-label="Delete expense">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <button class="floating-action" type="button" aria-label="Add expense">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+</div>

@@ -1,0 +1,37 @@
+<header class="header">
+
+  <div class="search-box">
+    <i class="bi bi-search"></i>
+    <input type="search" placeholder="Search expenses..." />
+  </div>
+
+  <div class="header-right">
+
+    <button class="icon-btn" type="button" aria-label="Notifications">
+      <i class="bi bi-bell"></i>
+    </button>
+
+    <button class="icon-btn" type="button" aria-label="Messages">
+      <i class="bi bi-envelope"></i>
+    </button>
+
+    <div class="profile">
+
+      <div class="avatar">
+        {{ initials }}
+      </div>
+
+      <div>
+        <h4>{{ username }}</h4>
+        <span>Software Engineer</span>
+      </div>
+
+      <button class="icon-btn" type="button" aria-label="Logout" (click)="logout()" title="Logout">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
+
+    </div>
+
+  </div>
+
+</header>

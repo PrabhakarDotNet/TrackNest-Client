@@ -31,7 +31,7 @@ export class LoginComponent {
       next: (success) => {
         this.loading = false;
         if (success) {
-          this.router.navigate(['expenses']);
+          this.router.navigate(['/dashboard']);  // ← FIXED
         } else {
           this.message = 'Invalid credentials. Please try again.';
         }

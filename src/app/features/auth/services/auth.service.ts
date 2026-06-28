@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
@@ -24,7 +25,7 @@ export class AuthService {
   private currentUserKey = 'tracknest-current-user';
   private accessTokenKey = 'tracknest-access-token';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
   login(username: string, password: string): Observable<boolean> {
     return this.http
@@ -127,5 +128,6 @@ export class AuthService {
   logout(): void {
     this.clearTokens();
     localStorage.removeItem(this.currentUserKey);
+    this.router.navigate(['/login']);  // ← FIXED
   }
 }

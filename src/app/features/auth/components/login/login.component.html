@@ -1,42 +1,73 @@
 <div class="auth-page">
-  <div class="auth-card">
-
-    <div class="auth-header">
-      <div class="brand-icon">
-        <i class="bi bi-nest"></i>
-      </div>
-      <h3>Welcome back</h3>
-      <p>Login to your TrackNest account</p>
+  <div class="auth-left">
+    <div class="brand">
+      <div class="brand-icon">T</div>
+      <span class="brand-name">TrackNest</span>
     </div>
-
-    <form (ngSubmit)="login()" class="auth-form">
-      <div class="mb-3">
-        <label class="form-label">Username</label>
-        <div class="input-wrapper">
-          <span class="input-icon">👤</span>
-          <input type="text" class="form-control" [(ngModel)]="username" name="username" placeholder="Enter username" required />
-        </div>
+    <p class="tagline">Your smart expense tracker with AI-powered insights</p>
+    <div class="feature-list">
+      <div class="feature-item">
+        <i class="bi bi-shield-check"></i> Secure JWT authentication
       </div>
-
-      <div class="mb-3">
-        <label class="form-label">Password</label>
-        <div class="input-wrapper">
-          <span class="input-icon">🔒</span>
-          <input type="password" class="form-control" [(ngModel)]="password" name="password" placeholder="Enter password" required />
-        </div>
+      <div class="feature-item">
+        <i class="bi bi-bar-chart"></i> Visual expense analytics
       </div>
-
-      <div *ngIf="message" class="alert alert-warning py-2">{{ message }}</div>
-
-      <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
-        {{ loading ? 'Logging in...' : 'Login' }}
-      </button>
-    </form>
-
-    <div class="auth-footer">
-      <span>New here?</span>
-      <a routerLink="/signup">Create an account</a>
+      <div class="feature-item">
+        <i class="bi bi-robot"></i> AI chat assistant (RAG powered)
+      </div>
+      <div class="feature-item">
+        <i class="bi bi-phone"></i> Responsive on all devices
+      </div>
     </div>
+  </div>
 
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h3>Welcome back</h3>
+        <p>Login to your TrackNest account</p>
+      </div>
+
+      <form (ngSubmit)="login()" class="auth-form">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <div class="input-wrapper">
+            <i class="bi bi-person input-icon"></i>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="username"
+              name="username"
+              placeholder="Enter username"
+              required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrapper">
+            <i class="bi bi-lock input-icon"></i>
+            <input
+              type="password"
+              class="form-control"
+              [(ngModel)]="password"
+              name="password"
+              placeholder="Enter password"
+              required />
+          </div>
+        </div>
+
+        <div *ngIf="message" class="alert-msg">{{ message }}</div>
+
+        <button type="submit" class="btn-submit" [disabled]="loading">
+          {{ loading ? 'Signing in...' : 'Sign in' }}
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <span>New to TrackNest?</span>
+        <a routerLink="/signup">Create an account</a>
+      </div>
+    </div>
   </div>
 </div>
