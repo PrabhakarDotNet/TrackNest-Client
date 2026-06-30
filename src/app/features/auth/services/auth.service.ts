@@ -1,133 +1,134 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { tap, catchError, filter, take, switchMap } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 
-interface UserProfile {
-  id: number;
-  username: string;
-  email: string;
-}
-
-interface AuthResponse {
-  accessToken: string;
-  user?: UserProfile;
-}
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = `${environment.apiUrl}/api/UserProfile`;
-  private authUrl = `${environment.apiUrl}/api/Auth`;
-  private currentUserKey = 'tracknest-current-user';
-  private accessTokenKey = 'tracknest-access-token';
+  private readonly ACCESS_TOKEN_KEY = 'access_token';
+  private readonly TOKEN_EXPIRY_KEY = 'token_expiry';
+  private readonly USER_KEY = 'current_user';
+
+  private isRefreshing = false;
+  private refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  login(username: string, password: string): Observable<boolean> {
-    return this.http
-      .post<AuthResponse>(`${this.authUrl}/login`, { username, password })
-      .pipe(
-        tap((response) => {
-          if (response?.accessToken) {
-            this.setAccessToken(response.accessToken);
-            if (response.user) {
-              this.setCurrentUser(response.user);
-            }
-          }
-        }),
-        map((response) => !!response?.accessToken),
-        catchError(() => of(false))
-      );
-  }
-
-  signup(username: string, email: string, password: string): Observable<boolean> {
-    return this.http
-      .post<AuthResponse>(`${this.authUrl}/signup`, { username, email, password })
-      .pipe(
-        tap((response) => {
-          if (response?.accessToken) {
-            this.setAccessToken(response.accessToken);
-            if (response.user) {
-              this.setCurrentUser(response.user);
-            }
-          }
-        }),
-        map(() => true),
-        catchError((error) => {
-          console.error('Signup failed', error.error ?? error);
-          return of(false);
-        })
-      );
-  }
-
-  setAccessToken(accessToken: string): void {
-    localStorage.setItem(this.accessTokenKey, accessToken);
-  }
+  // ─── Token helpers ───────────────────────────────────────────────
 
   getAccessToken(): string | null {
-    return localStorage.getItem(this.accessTokenKey);
+    return localStorage.getItem(this.ACCESS_TOKEN_KEY);
   }
 
-  clearTokens(): void {
-    localStorage.removeItem(this.accessTokenKey);
+  isTokenExpired(): boolean {
+    const expiry = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
+    if (!expiry) return true;
+    return Date.now() >= parseInt(expiry) - 30000;
   }
 
+  private saveSession(accessToken: string, expiresIn: number): void {
+    localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(this.TOKEN_EXPIRY_KEY, (Date.now() + expiresIn * 1000).toString());
+  }
+
+  private saveUser(user: any): void {
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+
+  // ─── User helpers (used by header, chat, expense-form) ───────────
+
+  getCurrentUser(): any {
+    const user = localStorage.getItem(this.USER_KEY);
+    return user ? JSON.parse(user) : null;
+  }
+
+  getCurrentUserId(): string | null {
+    return this.getCurrentUser()?.id ?? null;
+  }
+
+  // ─── Auth state ──────────────────────────────────────────────────
+
+  isLoggedIn(): boolean {
+    return !!this.getAccessToken() && !this.isTokenExpired();
+  }
+
+  // Alias used by auth.guard.ts
   isAuthenticated(): boolean {
-    return !!this.getAccessToken();
+    return this.isLoggedIn();
   }
 
-  refreshToken(): Observable<AuthResponse> {
-    return this.http
-      .post<AuthResponse>(`${this.authUrl}/refresh`, {}, { withCredentials: true })
-      .pipe(
-        tap((response) => {
-          if (response?.accessToken) {
-            this.setAccessToken(response.accessToken);
-          }
-        }),
-        catchError((error) => {
-          console.error('Token refresh failed', error);
-          this.logout();
-          return of().pipe(map(() => { throw error; }));
-        })
-      );
-  }
+  // ─── Auth actions ────────────────────────────────────────────────
 
-  getProfile(): Observable<UserProfile> {
-    return this.http.get<UserProfile>(`${this.apiUrl}/me`);
-  }
-
-  loadProfile(): Observable<boolean> {
-    return this.getProfile().pipe(
-      tap((user) => this.setCurrentUser(user)),
-      map(() => true),
-      catchError((error) => {
-        console.error('Failed to load profile', error);
-        return of(false);
+  login(credentials: { username: string; password: string }): Observable<any> {
+  return this.http
+    .post(`${environment.apiUrl}/auth/login`, credentials, {
+      withCredentials: true
+    })
+    .pipe(
+      tap((res: any) => {
+        this.saveSession(res.accessToken, res.expiresIn);
+        if (res.user) this.saveUser(res.user);
       })
     );
   }
 
-  setCurrentUser(user: UserProfile): void {
-    localStorage.setItem(this.currentUserKey, JSON.stringify(user));
+  signup(username: string, email: string, password: string): Observable<any> {
+    return this.http
+      .post(`${environment.apiUrl}/auth/register`, { username, email, password }, {
+        withCredentials: true
+      });
   }
 
-  getCurrentUser(): UserProfile | null {
-    const raw = localStorage.getItem(this.currentUserKey);
-    return raw ? JSON.parse(raw) : null;
+  refreshAccessToken(): Observable<any> {
+    return this.http
+      .post(`${environment.apiUrl}/auth/refresh`, {}, {
+        withCredentials: true
+      })
+      .pipe(
+        tap((res: any) => {
+          this.saveSession(res.accessToken, res.expiresIn);
+          this.refreshTokenSubject.next(res.accessToken);
+        }),
+        catchError((err) => {
+          this.logout();
+          return throwError(() => err);
+        })
+      );
   }
 
-  getCurrentUserId(): number | null {
-    return this.getCurrentUser()?.id ?? null;
+  handleTokenRefresh(): Observable<string> {
+    if (this.isRefreshing) {
+      return this.refreshTokenSubject.pipe(
+        filter(token => token !== null),
+        take(1)
+      );
+    }
+
+    this.isRefreshing = true;
+    this.refreshTokenSubject.next(null);
+
+    return this.refreshAccessToken().pipe(
+      switchMap((res: any) => {
+        this.isRefreshing = false;
+        return [res.accessToken];
+      }),
+      catchError((err) => {
+        this.isRefreshing = false;
+        return throwError(() => err);
+      })
+    );
   }
 
   logout(): void {
-    this.clearTokens();
-    localStorage.removeItem(this.currentUserKey);
-    this.router.navigate(['/login']);  // ← FIXED
+    this.http
+      .post(`${environment.apiUrl}/auth/logout`, {}, { withCredentials: true })
+      .subscribe({ error: () => {} });
+
+    localStorage.removeItem(this.ACCESS_TOKEN_KEY);
+    localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
+    localStorage.removeItem(this.USER_KEY);
+    this.router.navigate(['/login']);
   }
 }

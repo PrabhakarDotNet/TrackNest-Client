@@ -1,38 +1,93 @@
-import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { catchError, switchMap } from 'rxjs/operators';
-import { throwError } from 'rxjs';
+import { Injectable } from '@angular/core';
+import {
+  HttpRequest, HttpHandler, HttpEvent,
+  HttpInterceptor, HttpErrorResponse
+} from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { switchMap, catchError, filter, take } from 'rxjs/operators';
 import { AuthService } from '../../features/auth/services/auth.service';
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const token = authService.getAccessToken();
+@Injectable()
+export class AuthInterceptor implements HttpInterceptor {
+  private isRefreshing = false;
+  private refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
-  let authReq = req;
-  if (token) {
-    authReq = req.clone({
+  constructor(private authService: AuthService) {}
+
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (this.isAuthUrl(req.url)) {
+      return next.handle(req);
+    }
+
+    // PROACTIVE: Access token expired → refresh before sending
+    // Removed getRefreshToken() check — cookie is managed by browser, always present if set
+    if (this.authService.isTokenExpired()) {
+      return this.refreshAndRetry(req, next);
+    }
+
+    // NORMAL: Attach token
+    const token = this.authService.getAccessToken();
+    if (token) {
+      req = this.addToken(req, token);
+    }
+
+    // REACTIVE: Handle 401 (edge cases e.g. token revoked server-side)
+    return next.handle(req).pipe(
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401 && !req.url.includes('/auth/refresh')) {
+          return this.handle401Error(req, next);
+        }
+        return throwError(() => error);
+      })
+    );
+  }
+
+  private refreshAndRetry(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (this.isRefreshing) {
+      return this.refreshTokenSubject.pipe(
+        filter(token => token !== null),
+        take(1),
+        switchMap(token => next.handle(this.addToken(req, token!)))
+      );
+    }
+
+    this.isRefreshing = true;
+    this.refreshTokenSubject.next(null);
+
+    return this.authService.refreshAccessToken().pipe(
+      switchMap((res: any) => {
+        this.isRefreshing = false;
+        this.refreshTokenSubject.next(res.accessToken);
+        return next.handle(this.addToken(req, res.accessToken));
+      }),
+      catchError((err) => {
+        this.isRefreshing = false;
+        // logout() already called inside refreshAccessToken() on failure
+        return throwError(() => err);
+      })
+    );
+  }
+
+  private handle401Error(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (!this.isRefreshing) {
+      return this.refreshAndRetry(req, next);
+    }
+
+    return this.refreshTokenSubject.pipe(
+      filter(token => token !== null),
+      take(1),
+      switchMap(token => next.handle(this.addToken(req, token!)))
+    );
+  }
+
+  private addToken(req: HttpRequest<any>, token: string): HttpRequest<any> {
+    return req.clone({
+      withCredentials: true,                          // ← ADDED: sends HttpOnly cookie
       setHeaders: { Authorization: `Bearer ${token}` }
     });
   }
 
-  return next(authReq).pipe(
-    catchError(error => {
-      if (error.status === 401) {
-        // Try refreshing the token
-        return authService.refreshToken().pipe(
-          switchMap(res => {
-            const newToken = res.accessToken;
-            if (newToken) {
-              const retryReq = req.clone({
-                setHeaders: { Authorization: `Bearer ${newToken}` }
-              });
-              return next(retryReq);
-            }
-            return throwError(() => error);
-          })
-        );
-      }
-      return throwError(() => error);
-    })
-  );
-};
+  private isAuthUrl(url: string): boolean {
+    return url.includes('/auth/login') || url.includes('/auth/register');
+  }
+}

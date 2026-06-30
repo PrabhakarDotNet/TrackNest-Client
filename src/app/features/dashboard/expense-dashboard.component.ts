@@ -66,8 +66,8 @@ export class ExpenseDashboardComponent implements OnInit {
     this.cdr.markForCheck();
 
     this.expenseService.getMyExpenses().subscribe({
-      next: (data: Expense[]) => {
-        this.expenses = Array.isArray(data) ? data : [];
+  next: (response) => {
+       this.expenses = response.items;
         this.expenseCount = this.expenses.length;
         this.totalExpense = Math.round(
           this.expenses.reduce((sum, item) => sum + (item.amount ?? 0), 0)
@@ -77,7 +77,7 @@ export class ExpenseDashboardComponent implements OnInit {
         this.chartData = this.buildChart(this.expenses);
         this._categorySummary = this.buildCategorySummary(this.expenses);
         this.loading = false;
-        this.cdr.markForCheck(); // ← FIXED: was missing, UI was not updating
+        this.cdr.markForCheck();
       },
       error: err => {
         console.error(err);

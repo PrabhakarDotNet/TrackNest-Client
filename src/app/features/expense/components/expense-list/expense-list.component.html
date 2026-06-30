@@ -1,55 +1,150 @@
 <div class="expense-page">
-  <div class="expense-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-4 gap-3">
-    <div>
-      <p class="text-muted mb-1">TrackNest Expense Dashboard</p>
-      <h2 class="section-title">Expense Summary</h2>
-      <p class="section-subtitle">Manage your spending with a clean, modern interface.</p>
-    </div>
-    <button class="btn btn-primary btn-lg add-btn" (click)="openAddExpenseForm()">+ Add Expense</button>
-  </div>
+  <section class="panel expenses-panel">
+    <div class="panel-header">
+      <div>
+        <h2>Expense records</h2>
+        <p>View, add, update, and delete your expense transactions.</p>
+      </div>
 
-  <div class="expense-table-card shadow-sm">
-    <div class="table-top-bar d-flex justify-content-between align-items-center mb-3">
-      <span class="badge bg-info text-dark">{{ expenses.length }} expenses</span>
-      <span class="text-muted">Latest expense data shown below</span>
+      <button
+        class="primary-action"
+        type="button"
+        (click)="openAddExpenseForm()"
+        aria-label="Add expense">
+        <i class="bi bi-plus-lg"></i>
+        <span>Add expense</span>
+      </button>
     </div>
 
-    <div class="table-responsive">
-      <table class="table table-borderless align-middle mb-0">
+    <!-- Loading -->
+    <div class="state-banner" *ngIf="loading">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      <span>Loading expenses...</span>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!loading && expenses.length === 0">
+      <i class="bi bi-receipt"></i>
+      <h3>No expenses yet</h3>
+      <p>Add your first expense to start tracking spending here.</p>
+      <button class="primary-action" type="button" (click)="openAddExpenseForm()">
+        <i class="bi bi-plus-lg"></i>
+        <span>Add expense</span>
+      </button>
+    </div>
+
+    <!-- Expense Table -->
+    <div class="table-wrap" *ngIf="!loading && expenses.length > 0">
+      <table>
         <thead>
           <tr>
-            <th>Amount</th>
-            <th>Category of Expanse</th>
-            <th>Description</th>
-            <th>Expense Date</th>
-            <th>Actions</th>
+            <th (click)="sortByColumn('description')" class="sortable-th">
+              Description
+              <i class="bi" [ngClass]="{
+                'bi-arrow-up': sortBy === 'description' && sortDirection === 'asc',
+                'bi-arrow-down': sortBy === 'description' && sortDirection === 'desc',
+                'bi-arrow-down-up': sortBy !== 'description'
+              }"></i>
+            </th>
+
+            <th (click)="sortByColumn('category')" class="sortable-th">
+              Category
+              <i class="bi" [ngClass]="{
+                'bi-arrow-up': sortBy === 'category' && sortDirection === 'asc',
+                'bi-arrow-down': sortBy === 'category' && sortDirection === 'desc',
+                'bi-arrow-down-up': sortBy !== 'category'
+              }"></i>
+            </th>
+
+            <th (click)="sortByColumn('amount')" class="sortable-th">
+              Amount
+              <i class="bi" [ngClass]="{
+                'bi-arrow-up': sortBy === 'amount' && sortDirection === 'asc',
+                'bi-arrow-down': sortBy === 'amount' && sortDirection === 'desc',
+                'bi-arrow-down-up': sortBy !== 'amount'
+              }"></i>
+            </th>
+
+            <th (click)="sortByColumn('expenseDate')" class="sortable-th">
+              Date
+              <i class="bi" [ngClass]="{
+                'bi-arrow-up': sortBy === 'expenseDate' && sortDirection === 'asc',
+                'bi-arrow-down': sortBy === 'expenseDate' && sortDirection === 'desc',
+                'bi-arrow-down-up': sortBy !== 'expenseDate'
+              }"></i>
+            </th>
+
+            <th style="width:140px;">Actions</th>
           </tr>
         </thead>
+
         <tbody>
-          <tr *ngFor="let e of expenses" class="expense-row">
-            <td class="text-primary">{{ e.amount | currency:'INR' }}</td>
-            <td>{{ e.category }}</td>
-            <td class="text-muted description-cell">{{ e.description }}</td>
-            <td>{{ e.expenseDate ? (e.expenseDate | date:'dd MMMM yyyy') : '—' }}</td>
-            <td class="action-buttons text-nowrap">
-              <button class="btn btn-sm btn-outline-warning me-2" (click)="openEditExpenseForm(e)">Edit</button>
-              <button class="btn btn-sm btn-outline-danger" (click)="confirmDeleteExpense(e.id, e.description)">Delete</button>
+          <tr *ngFor="let expense of expenses">
+            <td>
+              <strong>{{ expense.description || 'Untitled expense' }}</strong>
+              <span>Expense record</span>
+            </td>
+            <td>
+              <span class="category-chip">{{ expense.category || 'Uncategorized' }}</span>
+            </td>
+            <td>{{ expense.amount | currency:'INR':'symbol':'1.0-0' }}</td>
+            <td>{{ expense.expenseDate ? (expense.expenseDate | date:'dd MMM yyyy') : '--' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button type="button" (click)="openEditExpenseForm(expense)" aria-label="Edit expense">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" (click)="confirmDeleteExpense(expense.id!, expense.description)" aria-label="Delete expense">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+  </section>
+
+  <!-- ✅ Pagination — outside panel, spans full width -->
+  <div class="pagination-row" *ngIf="!loading && totalCount > 0">
+    <span class="pagination-info">
+      Showing {{ startIndex }}–{{ endIndex }} of {{ totalCount }} expenses
+    </span>
+
+    <div class="pagination-controls">
+      <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+        &lsaquo; Prev
+      </button>
+
+      <button
+        *ngFor="let page of getPageNumbers()"
+        class="page-btn"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)">
+        {{ page }}
+      </button>
+
+      <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+        Next &rsaquo;
+      </button>
+    </div>
   </div>
+
 </div>
 
 <!-- Add/Edit Expense Modal -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseLabel" aria-hidden="true">
   <div class="modal-dialog modal-md modal-dialog-centered">
     <div class="modal-content expense-modal-content compact-modal">
-      <div class="modal-header border-0">
+      <div class="modal-header">
         <div>
-          <h5 class="modal-title" id="addExpenseLabel">{{ selectedExpense?.id ? 'Edit Expense' : 'Add Expense' }}</h5>
-          <p class="modal-subtitle mb-0">{{ selectedExpense?.id ? 'Update expense details' : 'Create a new expense entry' }}</p>
+          <h5 class="modal-title" id="addExpenseLabel">
+            {{ selectedExpense?.id ? 'Edit expense' : 'Add expense' }}
+          </h5>
+          <p class="modal-subtitle">
+            {{ selectedExpense?.id ? 'Update the transaction details.' : 'Create a new transaction record.' }}
+          </p>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -60,17 +155,20 @@
   </div>
 </div>
 
-<!-- Confirmation Modal -->
+<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
   <div class="modal-dialog modal-sm modal-dialog-centered">
-    <div class="modal-content confirm-modal-content text-center py-4 px-3">
-      <div class="confirm-icon mb-3">!</div>
-      <h5 class="mb-2" id="confirmDeleteLabel">Confirm delete</h5>
-      <p class="text-muted mb-2">This action cannot be undone.</p>
-      <p class="fw-semibold mb-4">Remove «{{ selectedDeleteDescription || 'selected expense' }}»?</p>
-      <div class="d-flex justify-content-center gap-2">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-danger" (click)="confirmDelete()">Delete</button>
+    <div class="modal-content confirm-modal-content">
+      <div class="modal-body">
+        <div class="confirm-icon">
+          <i class="bi bi-exclamation-lg"></i>
+        </div>
+        <h5 id="confirmDeleteLabel">Delete expense?</h5>
+        <p>Remove "{{ selectedDeleteDescription || 'selected expense' }}" from your records.</p>
+        <div class="confirm-actions">
+          <button type="button" class="secondary-action" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="danger-action" (click)="confirmDelete()">Delete</button>
+        </div>
       </div>
     </div>
   </div>

@@ -1,47 +1,60 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, Subject } from 'rxjs';          // ✅ add Subject
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, Subject } from 'rxjs';
 import { Expense } from '../models/expense.model';
 import { environment } from '../../../../environments/environment';
+
+export interface PagedExpenseResponse {
+  items: Expense[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class ExpenseService {
 
-  private apiUrl = `${environment.apiUrl}/api/Expenses`;
+  private apiUrl = `${environment.apiUrl}/Expenses`;
 
-  // ✅ Any component can trigger this, any component can listen
   private refreshTrigger = new Subject<void>();
   refresh$ = this.refreshTrigger.asObservable();
 
   constructor(private http: HttpClient) {}
 
   triggerRefresh(): void {
-    this.refreshTrigger.next();    // ✅ emit signal
+    this.refreshTrigger.next();
   }
 
-  getAll(): Observable<Expense[]> {
-    return this.http.get<Expense[]>(this.apiUrl);
+  getMyExpenses(
+    page = 1,
+    pageSize = 5,
+    sortBy = 'expenseDate',
+    sortDirection: 'asc' | 'desc' = 'desc'   // ← typed instead of plain string
+  ): Observable<PagedExpenseResponse> {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('pageSize', pageSize)
+      .set('sortBy', sortBy)
+      .set('sortDirection', sortDirection);
+
+    return this.http.get<PagedExpenseResponse>(`${this.apiUrl}/my-expenses`, { params });
   }
 
-  getMyExpenses(): Observable<Expense[]> {
-    return this.http.get<Expense[]>(`${this.apiUrl}/my-expenses`);
+  create(expense: Omit<Expense, 'id' | 'userId'>): Observable<{ id: number }> {
+  return this.http.post<{ id: number }>(this.apiUrl, expense);
+}
+
+  update(id: number, expense: Expense): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}`, expense);
   }
 
-  delete(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  create(expense: Expense): Observable<{ id: number }> {
-    return this.http.post<{ id: number }>(this.apiUrl, expense);
-  }
-
-  update(id: number, expense: Expense): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}`, expense);
-  }
-
-  addExpense(payload: any): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/api/Expenses`, payload);
-  }
 }

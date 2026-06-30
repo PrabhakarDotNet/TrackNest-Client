@@ -20,26 +20,22 @@ export class LoginComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   login() {
-    this.message = '';
-    if (!this.username || !this.password) {
-      this.message = 'Please enter both username and password.';
-      return;
-    }
-
-    this.loading = true;
-    this.authService.login(this.username, this.password).subscribe({
-      next: (success) => {
-        this.loading = false;
-        if (success) {
-          this.router.navigate(['/dashboard']);  // ← FIXED
-        } else {
-          this.message = 'Invalid credentials. Please try again.';
-        }
-      },
-      error: () => {
-        this.loading = false;
-        this.message = 'Unable to login right now. Please try later.';
-      }
-    });
+  this.message = '';
+  if (!this.username || !this.password) {
+    this.message = 'Please enter both username and password.';
+    return;
   }
+
+  this.loading = true;
+  this.authService.login({ username: this.username, password: this.password }).subscribe({
+    next: () => {
+      this.loading = false;
+      this.router.navigate(['/dashboard']);
+    },
+    error: () => {
+      this.loading = false;
+      this.message = 'Invalid credentials. Please try again.';
+    }
+  });
+}
 }

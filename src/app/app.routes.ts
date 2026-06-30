@@ -27,7 +27,6 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', component: ExpenseDashboardComponent },
       { path: 'expenses', component: ExpenseListComponent },
-      { path: 'ai-assistant', component: ChatWidgetComponent },
       { path: 'analytics', component: AnalyticsComponent },
       { path: 'categories', component: CategoriesComponent },
       { path: 'settings', component: SettingsComponent },

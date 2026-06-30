@@ -8,7 +8,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ChatService, ChatMessage, ExpenseContext, ExtractedExpense } from '../../services/chat.service';
 import { AuthService } from '../../../../features/auth/services/auth.service';
-import { ExpenseService } from '../../../../features/expense/services/expense.service';
+import { ExpenseService, PagedExpenseResponse } from '../../../../features/expense/services/expense.service';
 import { Expense } from '../../../../features/expense/models/expense.model';
 import { switchMap, of } from 'rxjs';
 
@@ -72,16 +72,15 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   }
 
   private loadExpenses(): void {
-    this.expenseService.getMyExpenses().subscribe({
-      next: (data: Expense[]) => {
-        this.expenses = data;
-      },
-      error: () => {
-        this.expenses = [];
-      }
-    });
-  }
-
+  this.expenseService.getMyExpenses().subscribe({
+    next: (data: PagedExpenseResponse) => {
+      this.expenses = data.items; // 👈 important fix
+    },
+    error: () => {
+      this.expenses = [];
+    }
+  });
+}
   ngAfterViewChecked(): void {
     if (this.shouldScroll) {
       this.scrollToBottom();
@@ -172,22 +171,27 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
         }
 
         // Not an expense intent — send to AI for normal Q&A
-        return this.expenseService.getMyExpenses().pipe(
-          switchMap((freshExpenses: Expense[]) => {
-            this.expenses = freshExpenses;
-            const expenseContext: ExpenseContext[] = freshExpenses.map(e => ({
-              description: e.description,
-              amount: e.amount,
-              category: e.category,
-              expenseDate: e.expenseDate ?? ''
-            }));
-            return this.chatService.sendMessage({
-              session_id: this.sessionId,
-              message,
-              expenses: expenseContext
-            });
-          })
-        );
+       return this.expenseService.getMyExpenses().pipe(
+  switchMap((res: PagedExpenseResponse) => {
+
+    const freshExpenses: Expense[] = res.items;
+
+    this.expenses = freshExpenses;
+
+    const expenseContext: ExpenseContext[] = freshExpenses.map(e => ({
+      description: e.description,
+      amount: e.amount,
+      category: e.category,
+      expenseDate: e.expenseDate ?? ''
+    }));
+
+    return this.chatService.sendMessage({
+      session_id: this.sessionId,
+      message,
+      expenses: expenseContext
+    });
+  })
+);
       })
     ).subscribe({
       next: (response) => {
@@ -292,14 +296,14 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   confirmExpense(): void {
     if (!this.pendingExpense) return;
 
-    const payload = {
-      description: this.pendingExpense.description,
-      amount: this.pendingExpense.amount,
-      category: this.pendingExpense.category,
-      expenseDate: this.pendingExpense.expenseDate
-    };
+    const payload: Omit<Expense, 'id' | 'userId'> = {
+  description: this.pendingExpense.description ?? '',
+  amount: this.pendingExpense.amount ?? 0,
+  category: this.pendingExpense.category ?? '',
+  expenseDate: this.pendingExpense.expenseDate?.trim() || new Date().toISOString()
+};
 
-    this.expenseService.addExpense(payload).subscribe({
+   this.expenseService.create(payload).subscribe({
       next: () => {
         this.showConfirmCard = false;
         this.messages = [...this.messages, {

@@ -109,7 +109,7 @@ export class ExpenseFormComponent implements OnChanges {
       return;
     }
 
-    this.expense.userId = userId;
+    this.expense.userId = userId ? parseInt(userId) : 0;
 
     if (this.expense.id && this.expense.id > 0) {
       this.expenseService.update(this.expense.id, this.expense).subscribe({

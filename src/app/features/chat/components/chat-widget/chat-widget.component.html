@@ -7,13 +7,15 @@
     <div class="chat-window" [class.open]="isOpen">
       <div class="chat-header">
         <div class="chat-header-info">
-          <div class="chat-avatar">🤖</div>
+          <div class="chat-avatar">
+            🤖
+            <span class="status-dot"></span>
+          </div>
           <div>
             <div class="chat-title">TrackNest AI</div>
-            <div class="chat-subtitle">Ask about your expenses</div>
+            <div class="chat-subtitle">Online · Ask about your expenses</div>
           </div>
         </div>
-        <button class="chat-close-btn" (click)="toggleChat()">✕</button>
       </div>
 
       <div class="chat-messages" #messagesContainer>
@@ -41,7 +43,7 @@
             <span class="confirm-value">{{ pendingExpense.category }}</span>
 
             <span class="confirm-label">Date</span>
-            <span class="confirm-value"> {{ pendingExpense.expenseDate | date:'dd MMM yyyy' }}</span>
+            <span class="confirm-value">{{ pendingExpense.expenseDate | date:'dd MMM yyyy' }}</span>
           </div>
           <div class="confirm-actions">
             <button class="btn-yes" (click)="confirmExpense()">✅ Yes, Add it</button>
