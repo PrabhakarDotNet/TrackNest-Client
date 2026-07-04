@@ -7,8 +7,22 @@
 
 .expense-page {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   margin-top: 0;      // ← ADD
   padding-top: 0;     // ← ADD
+}
+
+.expenses-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.table-wrap {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .panel {
@@ -283,10 +297,19 @@ td span {
   padding: 18px 22px;
 }
 
-.modal-title {
-  color: #dfe1f3;
-  font-size: 15px;
-  font-weight: 700;
+.expense-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1040;
+}
+
+.modal.d-block {
+  z-index: 1050;
+}
+
+.modal-dialog {
+  z-index: 1051;
 }
 
 .modal-subtitle {
@@ -358,7 +381,8 @@ td span {
 .pagination-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 18px;
   width: 100%;
   padding: 14px 24px;
   margin-top: 0;

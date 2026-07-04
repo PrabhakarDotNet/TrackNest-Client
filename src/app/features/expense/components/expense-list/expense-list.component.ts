@@ -24,6 +24,8 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   selectedExpense: Expense | null = null;
   selectedDeleteId: number | null = null;
   selectedDeleteDescription = '';
+  showExpenseModal = false;
+  showDeleteModal = false;
 
   sortBy: string = 'expenseDate';
   sortDirection: 'asc' | 'desc' = 'desc';
@@ -36,6 +38,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.clearBootstrapModalState();
     this.loadExpenses();
     this.refreshSubscription = this.expenseService.refresh$.subscribe(() => {
       this.loadExpenses();
@@ -44,6 +47,15 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.refreshSubscription?.unsubscribe();
+  }
+
+  private clearBootstrapModalState(): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    document.body.classList.remove('modal-open');
+    document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove());
   }
 
   get totalExpense(): number {
@@ -100,15 +112,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
   confirmDeleteExpense(id: number, description: string) {
     this.selectedDeleteId = id;
     this.selectedDeleteDescription = description || '';
-
-    const modalEl = document.getElementById('confirmDeleteModal');
-    if (!modalEl) return;
-
-    const BsModal = (window as any).bootstrap?.Modal;
-    if (!BsModal) return;
-
-    const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
-    instance.show();
+    this.showDeleteModal = true;
   }
 
   confirmDelete() {
@@ -119,14 +123,7 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
         this.loadExpenses();
         this.selectedDeleteId = null;
         this.selectedDeleteDescription = '';
-        const modalEl = document.getElementById('confirmDeleteModal');
-        if (modalEl) {
-          const BsModal = (window as any).bootstrap?.Modal;
-          if (BsModal) {
-            const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
-            instance.hide();
-          }
-        }
+        this.showDeleteModal = false;
       },
       error: (err) => {
         console.error(err);
@@ -138,38 +135,22 @@ export class ExpenseListComponent implements OnInit, OnDestroy {
 
   openAddExpenseForm() {
     this.selectedExpense = null;
-    const modalEl = document.getElementById('addExpenseModal');
-    if (!modalEl) return;
-
-    const BsModal = (window as any).bootstrap?.Modal;
-    if (!BsModal) return;
-
-    const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
-    instance.show();
+    this.showExpenseModal = true;
   }
 
   openEditExpenseForm(exp: Expense) {
     this.selectedExpense = { ...exp };
+    this.showExpenseModal = true;
+  }
 
-    const modalEl = document.getElementById('addExpenseModal');
-    if (!modalEl) return;
-
-    const BsModal = (window as any).bootstrap?.Modal;
-    if (!BsModal) return;
-
-    const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
-    instance.show();
+  closeExpenseModal() {
+    this.showExpenseModal = false;
+    this.clearBootstrapModalState();
   }
 
   onExpenseSaved() {
-    const modalEl = document.getElementById('addExpenseModal');
-    if (modalEl) {
-      const BsModal = (window as any).bootstrap?.Modal;
-      if (BsModal) {
-        const instance = BsModal.getInstance ? BsModal.getInstance(modalEl) ?? new BsModal(modalEl) : new BsModal(modalEl);
-        instance.hide();
-      }
-    }
+    this.showExpenseModal = false;
+    this.clearBootstrapModalState();
     this.loadExpenses();
   }
 

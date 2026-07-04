@@ -34,7 +34,7 @@ export class ExpenseService {
     page = 1,
     pageSize = 5,
     sortBy = 'expenseDate',
-    sortDirection: 'asc' | 'desc' = 'desc'   // ← typed instead of plain string
+    sortDirection: 'asc' | 'desc' = 'desc'
   ): Observable<PagedExpenseResponse> {
     const params = new HttpParams()
       .set('page', page)
@@ -46,8 +46,8 @@ export class ExpenseService {
   }
 
   create(expense: Omit<Expense, 'id' | 'userId'>): Observable<{ id: number }> {
-  return this.http.post<{ id: number }>(this.apiUrl, expense);
-}
+    return this.http.post<{ id: number }>(this.apiUrl, expense);
+  }
 
   update(id: number, expense: Expense): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, expense);
@@ -56,5 +56,4 @@ export class ExpenseService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
-
 }

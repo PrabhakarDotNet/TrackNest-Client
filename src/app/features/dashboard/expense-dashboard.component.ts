@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@
 import { CommonModule } from '@angular/common';
 import { ExpenseService } from '../expense/services/expense.service';
 import { Expense } from '../expense/models/expense.model';
+import { Router } from '@angular/router';
 
 interface ChartPoint {
   month: string;
@@ -46,7 +47,8 @@ export class ExpenseDashboardComponent implements OnInit {
 
   constructor(
     private expenseService: ExpenseService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router
   ) {}
 
   get categorySummary(): CategorySummaryItem[] {
@@ -60,6 +62,9 @@ export class ExpenseDashboardComponent implements OnInit {
       this.loadDashboardData();
     });
   }
+goToExpenses(): void {
+  this.router.navigate(['/expenses']);
+}
 
   loadDashboardData(): void {
     this.loading = true;

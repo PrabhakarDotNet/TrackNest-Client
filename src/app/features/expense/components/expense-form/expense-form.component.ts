@@ -16,6 +16,7 @@ import { environment } from '../../../../../environments/environment';
 })
 export class ExpenseFormComponent implements OnChanges {
   @Output() saved = new EventEmitter<void>();
+  @Output() cancel = new EventEmitter<void>();
   @Input() expenseInput: Expense | null = null;
 
   aiSuggested = false;
@@ -128,6 +129,11 @@ export class ExpenseFormComponent implements OnChanges {
         error: (err) => console.error(err)
       });
     }
+  }
+
+  cancelExpense(): void {
+    this.resetForm();
+    this.cancel.emit();
   }
 
   resetForm() {

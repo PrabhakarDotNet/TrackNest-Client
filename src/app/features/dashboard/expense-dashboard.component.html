@@ -30,7 +30,6 @@
     <section class="panel monthly-panel">
       <div class="panel-header">
         <h2>Monthly overview</h2>
-        <button type="button">View all</button>
       </div>
 
       <div class="chart-bars">
@@ -46,7 +45,6 @@
     <section class="panel category-panel">
       <div class="panel-header">
         <h2>By category</h2>
-        <button type="button">Details</button>
       </div>
 
       <div class="category-list">
@@ -68,10 +66,8 @@
 
   <section class="panel transactions-panel">
     <div class="panel-header">
-      <h2>Recent transactions</h2>
-      <button type="button" routerLink="/expenses">
-            View all
-      </button>
+      <h2>Recent 5 transactions</h2>
+     <button type="button" (click)="goToExpenses()">View all</button>
     </div>
 
     <div class="table-wrap">
