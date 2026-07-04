@@ -1,5 +1,5 @@
 <div class="expense-form-card">
-  <form (ngSubmit)="saveExpense()" class="expense-form">
+  <form [formGroup]="expenseForm" (ngSubmit)="saveExpense($event)" novalidate class="expense-form">
     <div class="expense-form-row">
       <div class="field field--half">
         <label class="form-label">Amount</label>
@@ -7,10 +7,13 @@
           type="number"
           class="form-control"
           placeholder="0.00"
-          [(ngModel)]="expense.amount"
-          name="amount"
-          required
+          formControlName="amount"
+          aria-invalid="{{ expenseForm.get('amount')?.invalid && expenseForm.get('amount')?.touched }}"
         />
+        <div class="hint" *ngIf="expenseForm.get('amount')?.invalid && expenseForm.get('amount')?.touched">
+          <span *ngIf="expenseForm.get('amount')?.errors?.['required']">Amount is required.</span>
+          <span *ngIf="expenseForm.get('amount')?.errors?.['min']">Amount must be greater than 0.</span>
+        </div>
       </div>
 
       <div class="field field--half">
@@ -18,9 +21,12 @@
         <input
           type="date"
           class="form-control"
-          [(ngModel)]="expense.expenseDate"
-          name="expenseDate"
+          formControlName="expenseDate"
+          aria-invalid="{{ expenseForm.get('expenseDate')?.invalid && expenseForm.get('expenseDate')?.touched }}"
         />
+        <div class="hint" *ngIf="expenseForm.get('expenseDate')?.invalid && expenseForm.get('expenseDate')?.touched">
+          <span>Expense date is required.</span>
+        </div>
       </div>
     </div>
 
@@ -30,11 +36,15 @@
         type="text"
         class="form-control"
         placeholder="e.g. food, travel, investment..."
-        [(ngModel)]="expense.description"
-        name="description"
+        formControlName="description"
         (input)="onDescriptionInput($event)"
+        aria-invalid="{{ expenseForm.get('description')?.invalid && expenseForm.get('description')?.touched }}"
       />
-      <div class="hint" *ngIf="!aiSuggested && !aiLoading">Type a description and AI will suggest a category.</div>
+      <div class="hint" *ngIf="expenseForm.get('description')?.invalid && expenseForm.get('description')?.touched">
+        <span *ngIf="expenseForm.get('description')?.errors?.['required']">Description is required.</span>
+        <span *ngIf="expenseForm.get('description')?.errors?.['minlength']">Description must be at least 3 characters.</span>
+      </div>
+      <div class="hint" *ngIf="!aiSuggested && !aiLoading && expenseForm.get('description')?.valid">Type a description and AI will suggest a category.</div>
       <div class="hint" *ngIf="aiLoading">AI is thinking...</div>
       <div class="hint hint--ai" *ngIf="aiSuggested && !aiLoading">Category auto-filled by AI. You can change it.</div>
     </div>
@@ -46,18 +56,22 @@
       </label>
       <select
         class="form-select"
-        [(ngModel)]="expense.category"
-        name="category"
-        required
+        formControlName="category"
+        aria-invalid="{{ expenseForm.get('category')?.invalid && expenseForm.get('category')?.touched }}"
       >
         <option value="" disabled>Select category</option>
         <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
       </select>
+      <div class="hint" *ngIf="expenseForm.get('category')?.invalid && expenseForm.get('category')?.touched">
+        <span>Category is required.</span>
+      </div>
     </div>
 
     <div class="expense-form-actions">
       <button type="button" class="btn btn-cancel" (click)="cancelExpense()">Cancel</button>
-      <button type="submit" class="btn btn-save">{{ expense.id && expense.id > 0 ? 'Update' : 'Save' }}</button>
+      <button type="submit" class="btn btn-save" [disabled]="expenseForm.invalid || isSubmitting" [attr.aria-busy]="isSubmitting">
+        {{ currentExpenseId > 0 ? 'Update' : 'Save' }}
+      </button>
     </div>
   </form>
 </div>

@@ -10,24 +10,24 @@
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 30px;
+  gap: 12px;
+  margin-bottom: 22px;
 }
 
 .stat-card,
 .panel {
-  border: 1px solid #2b2d47;
-  border-radius: 8px;
+  border: 1px solid #23263a;
+  border-radius: 14px;
   background: #11131f;
 }
 
 .stat-card {
-  min-height: 145px;
-  padding: 26px 24px;
+  min-height: 120px;
+  padding: 18px 18px;
 }
 
 .stat-card.featured {
-  border-color: #453bbe;
+  border-color: #5647d8;
 }
 
 .stat-card span {
@@ -70,20 +70,20 @@
 }
 
 .panel {
-  padding: 24px;
+  padding: 18px;
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .panel-header h2 {
   margin: 0;
   color: #cfd2e7;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -97,21 +97,21 @@
 
 .monthly-panel,
 .category-panel {
-  min-height: 214px;
+  min-height: 180px;
 }
 
 .chart-bars {
   display: grid;
-  grid-template-columns: repeat(6, minmax(56px, 1fr));
+  grid-template-columns: repeat(6, minmax(48px, 1fr));
   align-items: end;
-  gap: 26px;
-  height: 150px;
-  padding: 18px 40px 0;
+  gap: 18px;
+  height: 130px;
+  padding: 14px 28px 0;
 }
 
 .chart-item {
   display: grid;
-  grid-template-rows: 95px 22px;
+  grid-template-rows: 78px 20px;
   align-items: end;
   min-width: 0;
   text-align: center;
@@ -187,7 +187,7 @@
 }
 
 .transactions-panel {
-  min-height: 330px;
+  min-height: 260px;
 }
 
 .table-wrap {
@@ -204,7 +204,7 @@ table {
 
 th,
 td {
-  padding: 16px 12px;
+  padding: 12px 10px;
   border-bottom: 1px solid #232637;
   text-align: left;
 }
@@ -219,7 +219,7 @@ th {
 
 td {
   color: #cfd2e7;
-  font-size: 17px;
+  font-size: 15px;
 }
 
 td strong,

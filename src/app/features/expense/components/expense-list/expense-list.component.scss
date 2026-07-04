@@ -95,6 +95,107 @@
   margin-bottom: 18px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 260px;
+}
+
+.search-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #2b2d47;
+  background: #11131f;
+  color: #e7e9ff;
+  font-size: 13px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #5548e9;
+  box-shadow: 0 0 0 3px rgba(85, 72, 233, 0.12);
+}
+
+.export-dropdown {
+  position: relative;
+}
+
+.export-button {
+  min-height: 42px;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 700;
+  background: #5548e9;
+  border: 1px solid transparent;
+  box-shadow: 0 14px 30px rgba(85, 72, 233, 0.28);
+  color: #fff;
+}
+
+.export-button:hover {
+  background: #6255ff;
+}
+
+.export-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: 220px;
+  border: 1px solid #2b2d47;
+  border-radius: 10px;
+  background: #10131f;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  padding: 8px 0;
+  z-index: 20;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  color: #d9dcf3;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.export-option:hover {
+  background: #202137;
+}
+
+.export-option i {
+  font-size: 16px;
+}
+
+.export-option {
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px;
+  color: #d9dcf3;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.export-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .panel-header h2 {
   margin: 0;
   color: #cfd2e7;
@@ -195,6 +296,30 @@
   max-width: 320px;
   margin: 0;
   font-size: 13px;
+}
+
+.feature-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 20px;
+  border: 1px solid #232637;
+  border-radius: 12px;
+  background: #10121a;
+}
+
+.feature-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d3d7ff;
+  font-size: 13px;
+}
+
+.feature-item i {
+  font-size: 16px;
+  color: #6be1ad;
 }
 
 .table-wrap {

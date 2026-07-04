@@ -1,7 +1,8 @@
 import { Component, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { ExpenseService } from '../../services/expense.service';
 import { AuthService } from '../../../auth/services/auth.service';
 import { Expense } from '../../models/expense.model';
@@ -10,7 +11,7 @@ import { environment } from '../../../../../environments/environment';
 @Component({
   selector: 'app-expense-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './expense-form.component.html',
   styleUrls: ['./expense-form.component.scss']
 })
@@ -19,6 +20,8 @@ export class ExpenseFormComponent implements OnChanges {
   @Output() cancel = new EventEmitter<void>();
   @Input() expenseInput: Expense | null = null;
 
+  expenseForm: FormGroup;
+  isSubmitting = false;
   aiSuggested = false;
   aiLoading = false;
   private debounceTimer: any;
@@ -36,33 +39,35 @@ export class ExpenseFormComponent implements OnChanges {
     'Other'
   ];
 
-  expense: Expense = {
-    id: 0,
-    amount: null as any,
-    category: '',
-    description: '',
-    expenseDate: new Date().toISOString().slice(0, 10)
-  };
+  currentExpenseId = 0;
 
   constructor(
+    private fb: FormBuilder,
     private expenseService: ExpenseService,
     private authService: AuthService,
     private http: HttpClient
-  ) {}
+  ) {
+    this.expenseForm = this.fb.group({
+      amount: [null, [Validators.required, Validators.min(0.01)]],
+      expenseDate: [new Date().toISOString().slice(0, 10), Validators.required],
+      description: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/\S.*/)]],
+      category: ['', Validators.required]
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['expenseInput']) {
       const val: Expense | null = changes['expenseInput'].currentValue;
       if (val) {
-        this.expense = { ...val };
+        this.currentExpenseId = val.id ?? 0;
+        const dateValue = val.expenseDate ? this.formatDateInput(val.expenseDate) : new Date().toISOString().slice(0, 10);
+        this.expenseForm.setValue({
+          amount: val.amount ?? null,
+          expenseDate: dateValue,
+          description: val.description ?? '',
+          category: val.category ?? ''
+        });
         this.aiSuggested = false;
-        if (this.expense.expenseDate) {
-          try {
-            this.expense.expenseDate = new Date(this.expense.expenseDate).toISOString().slice(0, 10);
-          } catch {
-            // ignore parse errors
-          }
-        }
       } else {
         this.resetForm();
       }
@@ -89,7 +94,7 @@ export class ExpenseFormComponent implements OnChanges {
       { description }
     ).subscribe({
       next: (response) => {
-        this.expense.category = response.category;
+        this.expenseForm.get('category')?.setValue(response.category);
         this.aiSuggested = true;
         this.aiLoading = false;
       },
@@ -99,9 +104,13 @@ export class ExpenseFormComponent implements OnChanges {
     });
   }
 
-  saveExpense() {
-    if (this.expense.expenseDate) {
-      this.expense.expenseDate = new Date(this.expense.expenseDate).toISOString();
+  saveExpense(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.expenseForm.invalid) {
+      this.expenseForm.markAllAsTouched();
+      return;
     }
 
     const userId = this.authService.getCurrentUserId();
@@ -110,25 +119,33 @@ export class ExpenseFormComponent implements OnChanges {
       return;
     }
 
-    this.expense.userId = userId ? parseInt(userId) : 0;
+    const formValue = this.expenseForm.value;
+    const expense: Expense = {
+      id: this.currentExpenseId,
+      amount: Number(formValue.amount),
+      category: formValue.category,
+      description: formValue.description.trim(),
+      expenseDate: new Date(formValue.expenseDate).toISOString(),
+      userId: userId ? parseInt(userId) : 0
+    };
 
-    if (this.expense.id && this.expense.id > 0) {
-      this.expenseService.update(this.expense.id, this.expense).subscribe({
-        next: () => {
-          this.resetForm();
-          this.saved.emit();
-        },
-        error: (err) => console.error(err)
-      });
-    } else {
-      this.expenseService.create(this.expense).subscribe({
-        next: () => {
-          this.resetForm();
-          this.saved.emit();
-        },
-        error: (err) => console.error(err)
-      });
-    }
+    const request$: Observable<unknown> = this.currentExpenseId > 0
+      ? this.expenseService.update(this.currentExpenseId, expense)
+      : this.expenseService.create(expense);
+
+    this.isSubmitting = true;
+
+    request$.subscribe({
+      next: () => {
+        this.resetForm();
+        this.saved.emit();
+        this.isSubmitting = false;
+      },
+      error: (err: unknown) => {
+        console.error(err);
+        this.isSubmitting = false;
+      }
+    });
   }
 
   cancelExpense(): void {
@@ -137,14 +154,22 @@ export class ExpenseFormComponent implements OnChanges {
   }
 
   resetForm() {
-    this.expense = {
-      id: 0,
-      amount: null as any,
-      category: '',
+    this.currentExpenseId = 0;
+    this.expenseForm.reset({
+      amount: null,
+      expenseDate: new Date().toISOString().slice(0, 10),
       description: '',
-      expenseDate: new Date().toISOString().slice(0, 10)
-    };
+      category: ''
+    });
     this.aiSuggested = false;
     this.aiLoading = false;
+  }
+
+  private formatDateInput(value: string): string {
+    try {
+      return new Date(value).toISOString().slice(0, 10);
+    } catch {
+      return new Date().toISOString().slice(0, 10);
+    }
   }
 }

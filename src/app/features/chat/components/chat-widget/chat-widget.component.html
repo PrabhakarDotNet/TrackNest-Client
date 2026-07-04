@@ -64,14 +64,13 @@
           type="text"
           class="chat-input"
           placeholder="Ask about your expenses..."
-          [(ngModel)]="userInput"
+          [formControl]="userInputControl"
           (keydown)="onKeyDown($event)"
-          [disabled]="isLoading"
         />
         <button
           class="chat-send-btn"
           (click)="sendMessage()"
-          [disabled]="isLoading || !userInput.trim()"
+          [disabled]="isLoading || !(userInputControl.value || '').trim()"
         >
           ➤
         </button>

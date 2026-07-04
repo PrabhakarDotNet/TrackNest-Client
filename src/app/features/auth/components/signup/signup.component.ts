@@ -1,41 +1,58 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-signup',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './signup.component.html',
   styleUrls: ['./signup.component.scss']
 })
 export class SignupComponent {
-  username = '';
-  email = '';
-  password = '';
-  confirmPassword = '';
+  signupForm: FormGroup;
   message = '';
   loading = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
+    this.signupForm = this.fb.group({
+      username: ['', [Validators.required, Validators.minLength(3)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', [Validators.required]]
+    }, { validators: SignupComponent.passwordsMatch });
+  }
 
-  signup() {
+  static passwordsMatch(group: AbstractControl): ValidationErrors | null {
+    const pass = group.get('password')?.value;
+    const confirm = group.get('confirmPassword')?.value;
+    return pass && confirm && pass === confirm ? null : { passwordsMismatch: true };
+  }
+
+  signup(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
     this.message = '';
-    if (!this.username || !this.email || !this.password || !this.confirmPassword) {
-      this.message = 'Please fill in all fields.';
+
+    this.signupForm.markAllAsTouched();
+
+    if (this.signupForm.invalid) {
+      if (this.signupForm.errors?.['passwordsMismatch']) {
+        this.message = 'Passwords do not match.';
+      } else {
+        this.message = 'Please fill in all fields correctly.';
+      }
       return;
     }
 
-    if (this.password !== this.confirmPassword) {
-      this.message = 'Passwords do not match.';
-      return;
-    }
-
+    const { username, email, password } = this.signupForm.value;
+    console.log('Signup submit:', JSON.stringify({ username, email }));
     this.loading = true;
-    this.authService.signup(this.username, this.email, this.password).subscribe({
+    this.authService.signup(username, email, password).subscribe({
       next: (success) => {
+        console.log('Signup response:', success);
         this.loading = false;
         if (success) {
           this.router.navigate(['expenses']);
@@ -43,9 +60,17 @@ export class SignupComponent {
           this.message = 'Unable to sign up. Please try again.';
         }
       },
-      error: () => {
+      error: (err) => {
+        console.error('Signup error:', err);
         this.loading = false;
-        this.message = 'Server error during signup. Please try again later.';
+
+        const backendMessage =
+          err?.error?.message ||
+          (typeof err?.error === 'string' ? err.error : null) ||
+          err?.message ||
+          'Server error during signup. Please try again later.';
+
+        this.message = backendMessage;
       }
     });
   }

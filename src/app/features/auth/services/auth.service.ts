@@ -76,9 +76,16 @@ export class AuthService {
 
   signup(username: string, email: string, password: string): Observable<any> {
     return this.http
-      .post(`${environment.apiUrl}/auth/register`, { username, email, password }, {
+      .post(`${environment.apiUrl}/auth/signup`, { username, email, password }, {
         withCredentials: true
-      });
+      })
+      .pipe(
+        tap(res => console.log('AuthService.signup -> response:', res)),
+        catchError(err => {
+          console.error('AuthService.signup -> error:', err);
+          return throwError(() => err);
+        })
+      );
   }
 
   refreshAccessToken(): Observable<any> {

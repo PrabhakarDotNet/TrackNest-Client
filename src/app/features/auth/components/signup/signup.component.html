@@ -28,7 +28,7 @@
         <p>Sign up to start tracking expenses with TrackNest</p>
       </div>
 
-      <form (ngSubmit)="signup()" class="auth-form">
+      <form [formGroup]="signupForm" (ngSubmit)="signup($event)" class="auth-form" novalidate>
         <div class="form-group">
           <label class="form-label">Username</label>
           <div class="input-wrapper">
@@ -36,10 +36,13 @@
             <input
               type="text"
               class="form-control"
-              [(ngModel)]="username"
-              name="username"
+              formControlName="username"
               placeholder="Enter username"
               required />
+          </div>
+          <div class="hint" *ngIf="signupForm.get('username')?.touched && signupForm.get('username')?.invalid">
+            <span *ngIf="signupForm.get('username')?.errors?.['required']">Username is required.</span>
+            <span *ngIf="signupForm.get('username')?.errors?.['minlength']">Username must be at least 3 characters.</span>
           </div>
         </div>
 
@@ -50,10 +53,13 @@
             <input
               type="email"
               class="form-control"
-              [(ngModel)]="email"
-              name="email"
+              formControlName="email"
               placeholder="Enter email"
               required />
+          </div>
+          <div class="hint" *ngIf="signupForm.get('email')?.touched && signupForm.get('email')?.invalid">
+            <span *ngIf="signupForm.get('email')?.errors?.['required']">Email is required.</span>
+            <span *ngIf="signupForm.get('email')?.errors?.['email']">Enter a valid email address.</span>
           </div>
         </div>
 
@@ -64,10 +70,13 @@
             <input
               type="password"
               class="form-control"
-              [(ngModel)]="password"
-              name="password"
+              formControlName="password"
               placeholder="Enter password"
               required />
+          </div>
+          <div class="hint" *ngIf="signupForm.get('password')?.touched && signupForm.get('password')?.invalid">
+            <span *ngIf="signupForm.get('password')?.errors?.['required']">Password is required.</span>
+            <span *ngIf="signupForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters.</span>
           </div>
         </div>
 
@@ -78,18 +87,18 @@
             <input
               type="password"
               class="form-control"
-              [(ngModel)]="confirmPassword"
-              name="confirmPassword"
+              formControlName="confirmPassword"
               placeholder="Re-enter password"
               required />
           </div>
+          <div class="hint" *ngIf="(signupForm.get('confirmPassword')?.touched || signupForm.touched) && signupForm.errors?.['passwordsMismatch']">
+            <span>Passwords do not match.</span>
+          </div>
         </div>
 
-        @if(message) {
-          <div class="alert-msg">{{ message }}</div>
-        }
+        <div *ngIf="message" class="alert-msg">{{ message }}</div>
 
-        <button type="submit" class="btn-submit" [disabled]="loading">
+        <button type="submit" class="btn-submit" [disabled]="loading || signupForm.invalid">
           {{ loading ? 'Creating account...' : 'Create account' }}
         </button>
       </form>

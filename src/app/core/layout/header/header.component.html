@@ -2,7 +2,19 @@
 
   <div class="search-box">
     <i class="bi bi-search"></i>
-    <input type="search" placeholder="Search expenses..." />
+    <input
+      type="text"
+      placeholder="Search expenses..."
+      [value]="searchValue"
+      (input)="onSearchInput($event)" />
+    <button
+      *ngIf="searchValue"
+      type="button"
+      class="clear-btn"
+      (click)="clearSearch()"
+      aria-label="Clear search">
+      <i class="bi bi-x-circle"></i>
+    </button>
   </div>
 
   <div class="header-right">

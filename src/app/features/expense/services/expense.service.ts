@@ -23,6 +23,8 @@ export class ExpenseService {
 
   private refreshTrigger = new Subject<void>();
   refresh$ = this.refreshTrigger.asObservable();
+  private searchTermSource = new Subject<string>();
+searchTerm$ = this.searchTermSource.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -30,17 +32,26 @@ export class ExpenseService {
     this.refreshTrigger.next();
   }
 
+  setSearchTerm(term: string): void {
+  this.searchTermSource.next(term);
+  }
+  
   getMyExpenses(
     page = 1,
     pageSize = 5,
     sortBy = 'expenseDate',
-    sortDirection: 'asc' | 'desc' = 'desc'
+    sortDirection: 'asc' | 'desc' = 'desc',
+    search?: string
   ): Observable<PagedExpenseResponse> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('page', page)
       .set('pageSize', pageSize)
       .set('sortBy', sortBy)
       .set('sortDirection', sortDirection);
+
+    if (search?.trim()) {
+      params = params.set('search', search.trim());
+    }
 
     return this.http.get<PagedExpenseResponse>(`${this.apiUrl}/my-expenses`, { params });
   }

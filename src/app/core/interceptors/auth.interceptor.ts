@@ -88,6 +88,6 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private isAuthUrl(url: string): boolean {
-    return url.includes('/auth/login') || url.includes('/auth/register');
-  }
+  return url.includes('/auth/');
+}
 }

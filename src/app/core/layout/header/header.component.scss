@@ -42,6 +42,33 @@
   color: #8f93ad;
 }
 
+.search-box input::-ms-clear,
+.search-box input::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.search-box .clear-btn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #8589b4;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.search-box .clear-btn:hover {
+  color: #5b5ce2;
+}
+
 .header-right {
   display: flex;
   align-items: center;

@@ -1,19 +1,49 @@
 <div class="expense-page">
   <section class="panel expenses-panel">
     <div class="panel-header">
-      <div>
+      <div class="header-title">
         <h2>Expense records</h2>
         <p>View, add, update, and delete your expense transactions.</p>
       </div>
 
-      <button
-        class="primary-action"
-        type="button"
-        (click)="openAddExpenseForm()"
-        aria-label="Add expense">
-        <i class="bi bi-plus-lg"></i>
-        <span>Add expense</span>
-      </button>
+      <div class="header-actions">
+        <div class="export-dropdown" [class.open]="exportMenuOpen">
+          <button
+            class="primary-action export-button"
+            type="button"
+            (click)="toggleExportMenu()"
+            aria-haspopup="true"
+            [attr.aria-expanded]="exportMenuOpen">
+            <i class="bi bi-file-earmark-arrow-down"></i>
+            <span>Export</span>
+            <i class="bi bi-caret-down-fill"></i>
+          </button>
+
+          <div class="export-options" *ngIf="exportMenuOpen">
+            <button type="button" class="export-option" (click)="exportSelected('csv')">
+              <i class="bi bi-filetype-csv"></i>
+              <span>CSV</span>
+            </button>
+            <button type="button" class="export-option" (click)="exportSelected('excel')">
+              <i class="bi bi-filetype-xlsx"></i>
+              <span>Excel</span>
+            </button>
+            <button type="button" class="export-option" (click)="exportSelected('pdf')">
+              <i class="bi bi-filetype-pdf"></i>
+              <span>PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <button
+          class="primary-action"
+          type="button"
+          (click)="openAddExpenseForm()"
+          aria-label="Add expense">
+          <i class="bi bi-plus-lg"></i>
+          <span>Add expense</span>
+        </button>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -22,8 +52,8 @@
       <span>Loading expenses...</span>
     </div>
 
-    <!-- Empty State -->
-    <div class="empty-state" *ngIf="!loading && expenses.length === 0">
+    <!-- Empty State: no expenses at all (no search term active) -->
+    <div class="empty-state" *ngIf="!loading && expenses.length === 0 && !searchTerm">
       <i class="bi bi-receipt"></i>
       <h3>No expenses yet</h3>
       <p>Add your first expense to start tracking spending here.</p>
@@ -31,6 +61,13 @@
         <i class="bi bi-plus-lg"></i>
         <span>Add expense</span>
       </button>
+    </div>
+
+    <!-- Empty State: a search term returned nothing -->
+    <div class="empty-state" *ngIf="!loading && expenses.length === 0 && searchTerm">
+      <i class="bi bi-search"></i>
+      <h3>No results found</h3>
+      <p>Try a different keyword to find the expense you want.</p>
     </div>
 
     <!-- Expense Table -->
@@ -106,7 +143,7 @@
 
   </section>
 
-  <!-- ✅ Pagination — outside panel, spans full width -->
+  <!-- Pagination — outside panel, spans full width -->
   <div class="pagination-row" *ngIf="!loading && totalCount > 0">
     <span class="pagination-info">
       Showing {{ startIndex }}–{{ endIndex }} of {{ totalCount }} expenses

@@ -3,7 +3,7 @@ import {
   AfterViewChecked, ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormControl, Validators } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ChatService, ChatMessage, ExpenseContext, ExtractedExpense } from '../../services/chat.service';
@@ -15,7 +15,7 @@ import { switchMap, of } from 'rxjs';
 @Component({
   selector: 'app-chat-widget',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './chat-widget.component.html',
   styleUrls: ['./chat-widget.component.scss']
 })
@@ -24,7 +24,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
 
   isOpen = false;
   isVisible = false;
-  userInput = '';
+  userInputControl = new FormControl('', [Validators.required]);
   isLoading = false;
   sessionId = '';
   private shouldScroll = false;
@@ -54,6 +54,17 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {}
+
+  private setLoading(flag: boolean): void {
+    this.isLoading = flag;
+    try {
+      if (flag) {
+        this.userInputControl.disable({ emitEvent: false });
+      } else {
+        this.userInputControl.enable({ emitEvent: false });
+      }
+    } catch {}
+  }
 
   ngOnInit(): void {
     const userId = this.authService.getCurrentUserId();
@@ -97,7 +108,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
   }
 
   sendMessage(): void {
-    const message = this.userInput.trim();
+    const message = String(this.userInputControl.value || '').trim();
     if (!message || this.isLoading) return;
 
     this.messages = [...this.messages, {
@@ -105,7 +116,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
       content: message,
       timestamp: new Date()
     }];
-    this.userInput = '';
+    this.userInputControl.reset('');
     this.shouldScroll = true;
 
     // If we are in a guided step, handle it locally — no API call needed
@@ -114,14 +125,14 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
       return;
     }
 
-    this.isLoading = true;
+    this.setLoading(true);
 
     this.chatService.extractExpense(message).pipe(
       switchMap((extracted: ExtractedExpense) => {
 
         if (extracted.found) {
           this.partialExpense = { ...extracted };
-          this.isLoading = false;
+          this.setLoading(false);
 
           // Missing amount — ask first
           if (!extracted.amount || extracted.amount <= 0) {
@@ -201,7 +212,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
           content: response.reply,
           timestamp: new Date()
         }];
-        this.isLoading = false;
+        this.setLoading(false);
         this.shouldScroll = true;
         this.cdr.detectChanges();
       },
@@ -211,7 +222,7 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
           content: 'Sorry, I could not connect to the AI service. Please try again.',
           timestamp: new Date()
         }];
-        this.isLoading = false;
+        this.setLoading(false);
         this.shouldScroll = true;
         this.cdr.detectChanges();
       }

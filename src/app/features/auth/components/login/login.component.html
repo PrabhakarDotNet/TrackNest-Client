@@ -28,7 +28,7 @@
         <p>Login to your TrackNest account</p>
       </div>
 
-      <form (ngSubmit)="login()" class="auth-form">
+      <form [formGroup]="loginForm" (ngSubmit)="login()" class="auth-form" novalidate>
         <div class="form-group">
           <label class="form-label">Username</label>
           <div class="input-wrapper">
@@ -36,10 +36,13 @@
             <input
               type="text"
               class="form-control"
-              [(ngModel)]="username"
-              name="username"
+              formControlName="username"
               placeholder="Enter username"
               required />
+          </div>
+          <div class="hint" *ngIf="loginForm.get('username')?.touched && loginForm.get('username')?.invalid">
+            <span *ngIf="loginForm.get('username')?.errors?.['required']">Username is required.</span>
+            <span *ngIf="loginForm.get('username')?.errors?.['minlength']">Username must be at least 3 characters.</span>
           </div>
         </div>
 
@@ -50,16 +53,19 @@
             <input
               type="password"
               class="form-control"
-              [(ngModel)]="password"
-              name="password"
+              formControlName="password"
               placeholder="Enter password"
               required />
+          </div>
+          <div class="hint" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
+            <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required.</span>
+            <span *ngIf="loginForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters.</span>
           </div>
         </div>
 
         <div *ngIf="message" class="alert-msg">{{ message }}</div>
 
-        <button type="submit" class="btn-submit" [disabled]="loading">
+        <button type="submit" class="btn-submit" [disabled]="loading || loginForm.invalid">
           {{ loading ? 'Signing in...' : 'Sign in' }}
         </button>
       </form>
