@@ -34,12 +34,11 @@ export class HeaderComponent {
   }
 
   get username(): string {
-    return this.authService.getCurrentUser()?.username ?? 'User';
-  }
+  return this.authService.getCurrentUser()?.displayName ?? 'User';
+}
 
   get initials(): string {
-    const name = this.username;
-    return name.substring(0, 2).toUpperCase();
-  }
-  
+  const name = this.username;
+  return name.substring(0, 2).toUpperCase();
+}
 }

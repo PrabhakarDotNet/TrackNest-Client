@@ -252,3 +252,31 @@
     }
   }
 }
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #dcdcdc;
+}
+
+.divider span {
+  margin: 0 12px;
+  color: #888;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  width: 100%;
+}

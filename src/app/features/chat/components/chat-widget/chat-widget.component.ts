@@ -66,21 +66,24 @@ export class ChatWidgetComponent implements OnInit, AfterViewChecked {
     } catch {}
   }
 
-  ngOnInit(): void {
-    const userId = this.authService.getCurrentUserId();
-    this.sessionId = userId ? `user-${userId}` : `guest-${Date.now()}`;
+ ngOnInit(): void {
+  const userId = this.authService.getCurrentUserId();
+  this.sessionId = userId ? `user-${userId}` : `guest-${Date.now()}`;
+
+  this.isVisible = !this.authRoutes.includes(this.router.url);
+
+  if (this.authService.isAuthenticated()) {
     this.loadExpenses();
-
-    this.isVisible = !this.authRoutes.includes(this.router.url);
-
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe((event: any) => {
-      this.isVisible = !this.authRoutes.includes(event.urlAfterRedirects);
-      if (!this.isVisible) this.isOpen = false;
-      this.cdr.detectChanges();
-    });
   }
+
+  this.router.events.pipe(
+    filter(event => event instanceof NavigationEnd)
+  ).subscribe((event: any) => {
+    this.isVisible = !this.authRoutes.includes(event.urlAfterRedirects);
+    if (!this.isVisible) this.isOpen = false;
+    this.cdr.detectChanges();
+  });
+}
 
   private loadExpenses(): void {
   this.expenseService.getMyExpenses().subscribe({

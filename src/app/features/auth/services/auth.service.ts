@@ -16,8 +16,6 @@ export class AuthService {
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  // ─── Token helpers ───────────────────────────────────────────────
-
   getAccessToken(): string | null {
     return localStorage.getItem(this.ACCESS_TOKEN_KEY);
   }
@@ -37,8 +35,6 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
   }
 
-  // ─── User helpers (used by header, chat, expense-form) ───────────
-
   getCurrentUser(): any {
     const user = localStorage.getItem(this.USER_KEY);
     return user ? JSON.parse(user) : null;
@@ -48,30 +44,25 @@ export class AuthService {
     return this.getCurrentUser()?.id ?? null;
   }
 
-  // ─── Auth state ──────────────────────────────────────────────────
-
   isLoggedIn(): boolean {
     return !!this.getAccessToken() && !this.isTokenExpired();
   }
 
-  // Alias used by auth.guard.ts
   isAuthenticated(): boolean {
     return this.isLoggedIn();
   }
 
-  // ─── Auth actions ────────────────────────────────────────────────
-
   login(credentials: { username: string; password: string }): Observable<any> {
-  return this.http
-    .post(`${environment.apiUrl}/auth/login`, credentials, {
-      withCredentials: true
-    })
-    .pipe(
-      tap((res: any) => {
-        this.saveSession(res.accessToken, res.expiresIn);
-        if (res.user) this.saveUser(res.user);
+    return this.http
+      .post(`${environment.apiUrl}/auth/login`, credentials, {
+        withCredentials: true
       })
-    );
+      .pipe(
+        tap((res: any) => {
+          this.saveSession(res.accessToken, res.expiresIn);
+          if (res.user) this.saveUser(res.user);
+        })
+      );
   }
 
   signup(username: string, email: string, password: string): Observable<any> {
@@ -83,6 +74,23 @@ export class AuthService {
         tap(res => console.log('AuthService.signup -> response:', res)),
         catchError(err => {
           console.error('AuthService.signup -> error:', err);
+          return throwError(() => err);
+        })
+      );
+  }
+
+  googleLogin(idToken: string): Observable<any> {
+    return this.http
+      .post(`${environment.apiUrl}/auth/google-login`, { idToken }, {
+        withCredentials: true
+      })
+      .pipe(
+        tap((res: any) => {
+          this.saveSession(res.accessToken, res.expiresIn ?? 3600);
+          if (res.user) this.saveUser(res.user);
+        }),
+        catchError(err => {
+          console.error('AuthService.googleLogin -> error:', err);
           return throwError(() => err);
         })
       );
